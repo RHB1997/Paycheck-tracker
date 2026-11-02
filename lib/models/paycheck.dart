@@ -6,6 +6,7 @@ class Paycheck {
     required this.currencyCode,
     required this.grossMinor,
     required this.taxWithheldMinor,
+    this.fractionDigits = 2,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toUtc(),
@@ -17,6 +18,7 @@ class Paycheck {
   final String currencyCode;
   final int grossMinor;
   final int taxWithheldMinor;
+  final int fractionDigits;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -30,6 +32,7 @@ class Paycheck {
       currencyCode: map['currency_code'] as String,
       grossMinor: map['gross_minor'] as int,
       taxWithheldMinor: map['tax_withheld_minor'] as int,
+      fractionDigits: map['fraction_digits'] as int,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -41,6 +44,7 @@ class Paycheck {
     'currency_code': currencyCode,
     'gross_minor': grossMinor,
     'tax_withheld_minor': taxWithheldMinor,
+    'fraction_digits': fractionDigits,
     'created_at': createdAt.toUtc().toIso8601String(),
     'updated_at': updatedAt.toUtc().toIso8601String(),
   };

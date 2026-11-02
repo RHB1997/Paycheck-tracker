@@ -10,11 +10,12 @@ This app stores financial data on the user's iPhone. It has no account system, r
 - `label`: optional display name, such as "November paycheck"
 - `payDate`: date received
 - `currencyCode`: three-letter uppercase currency code
+- `fractionDigits`: number of decimal places used for this paycheck's currency amounts (0–3)
 - `grossMinor`: gross salary in integer minor units
 - `taxWithheldMinor`: tax already withheld, entered or confirmed by the user
 - `createdAt` and `updatedAt`: local timestamps
 
-Net pay is calculated as `grossMinor - taxWithheldMinor`. Tax is recorded as supplied by the user; the app does not infer a tax rate or tax liability.
+Amounts use integer minor units rather than floating-point values. `fractionDigits` defines how many decimal places make up one whole currency unit, so the app does not assume every currency has two. Net pay is calculated as `grossMinor - taxWithheldMinor`. Tax is recorded as supplied by the user; the app does not infer a tax rate or tax liability.
 
 ### Money entry
 

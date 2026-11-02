@@ -6,7 +6,7 @@ class LocalDatabase {
 
   static final LocalDatabase instance = LocalDatabase._();
   static const _databaseName = 'paycheck_tracker.db';
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
 
   Database? _database;
 
@@ -20,6 +20,7 @@ class LocalDatabase {
       version: _databaseVersion,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _createSchema,
+      onUpgrade: _upgradeSchema,
     );
     _database = opened;
     return opened;
@@ -36,6 +37,8 @@ class LocalDatabase {
         gross_minor INTEGER NOT NULL CHECK(gross_minor >= 0),
         tax_withheld_minor INTEGER NOT NULL
           CHECK(tax_withheld_minor >= 0 AND tax_withheld_minor <= gross_minor),
+        fraction_digits INTEGER NOT NULL DEFAULT 2
+          CHECK(fraction_digits BETWEEN 0 AND 3),
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -61,5 +64,18 @@ class LocalDatabase {
       'CREATE INDEX entries_by_paycheck_date '
       'ON money_entries(paycheck_id, occurred_at DESC, id DESC)',
     );
+  }
+
+  Future<void> _upgradeSchema(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        ALTER TABLE paychecks ADD COLUMN fraction_digits INTEGER NOT NULL
+          DEFAULT 2 CHECK(fraction_digits BETWEEN 0 AND 3)
+      ''');
+    }
   }
 }

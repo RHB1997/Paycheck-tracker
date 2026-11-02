@@ -153,6 +153,13 @@ class PaycheckRepository {
         'Use a 3-letter uppercase currency code.',
       );
     }
+    if (paycheck.fractionDigits < 0 || paycheck.fractionDigits > 3) {
+      throw ArgumentError.value(
+        paycheck.fractionDigits,
+        'fractionDigits',
+        'Must be between 0 and 3.',
+      );
+    }
     if (paycheck.grossMinor < 0 ||
         paycheck.taxWithheldMinor < 0 ||
         paycheck.taxWithheldMinor > paycheck.grossMinor) {
