@@ -52,6 +52,17 @@ class _PaycheckDetailPageState extends State<PaycheckDetailPage> {
     await _reload();
   }
 
+  Future<void> _editEntry(MoneyEntry entry) async {
+    final updated = await showDialog<MoneyEntry>(
+      context: context,
+      builder: (_) =>
+          MoneyEntryFormDialog(paycheck: widget.paycheck, initialEntry: entry),
+    );
+    if (updated == null || !mounted) return;
+    await widget.repository.updateEntry(updated);
+    await _reload();
+  }
+
   Future<void> _deleteEntry(MoneyEntry entry) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -122,6 +133,7 @@ class _PaycheckDetailPageState extends State<PaycheckDetailPage> {
                     child: _EntryTile(
                       entry: entry,
                       amount: _amount(entry.amountMinor),
+                      onEdit: () => _editEntry(entry),
                       onDelete: () => _deleteEntry(entry),
                     ),
                   ),
@@ -218,11 +230,13 @@ class _EntryTile extends StatelessWidget {
   const _EntryTile({
     required this.entry,
     required this.amount,
+    required this.onEdit,
     required this.onDelete,
   });
 
   final MoneyEntry entry;
   final String amount;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -241,10 +255,16 @@ class _EntryTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('${isSaving ? '+' : '−'}$amount'),
-            IconButton(
-              tooltip: 'Delete entry',
-              onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline),
+            PopupMenuButton<String>(
+              tooltip: 'Entry options',
+              onSelected: (action) {
+                if (action == 'edit') onEdit();
+                if (action == 'delete') onDelete();
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'edit', child: Text('Edit')),
+                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              ],
             ),
           ],
         ),
@@ -287,9 +307,14 @@ class _DetailError extends StatelessWidget {
 }
 
 class MoneyEntryFormDialog extends StatefulWidget {
-  const MoneyEntryFormDialog({super.key, required this.paycheck});
+  const MoneyEntryFormDialog({
+    super.key,
+    required this.paycheck,
+    this.initialEntry,
+  });
 
   final Paycheck paycheck;
+  final MoneyEntry? initialEntry;
 
   @override
   State<MoneyEntryFormDialog> createState() => _MoneyEntryFormDialogState();
@@ -297,10 +322,22 @@ class MoneyEntryFormDialog extends StatefulWidget {
 
 class _MoneyEntryFormDialogState extends State<MoneyEntryFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _category = TextEditingController();
-  final _note = TextEditingController();
-  final _amount = TextEditingController();
-  MoneyEntryKind _kind = MoneyEntryKind.expense;
+  late final _category = TextEditingController(
+    text: widget.initialEntry?.category ?? '',
+  );
+  late final _note = TextEditingController(
+    text: widget.initialEntry?.note ?? '',
+  );
+  late final _amount = TextEditingController(
+    text: widget.initialEntry == null
+        ? ''
+        : formatMinorUnits(
+            widget.initialEntry!.amountMinor,
+            fractionDigits: widget.paycheck.fractionDigits,
+          ),
+  );
+  late MoneyEntryKind _kind =
+      widget.initialEntry?.kind ?? MoneyEntryKind.expense;
 
   @override
   void dispose() {
@@ -326,6 +363,7 @@ class _MoneyEntryFormDialogState extends State<MoneyEntryFormDialog> {
     if (!_formKey.currentState!.validate()) return;
     Navigator.of(context).pop(
       MoneyEntry(
+        id: widget.initialEntry?.id,
         paycheckId: widget.paycheck.id!,
         kind: _kind,
         category: _category.text.trim(),
@@ -334,7 +372,8 @@ class _MoneyEntryFormDialogState extends State<MoneyEntryFormDialog> {
           _amount.text,
           fractionDigits: widget.paycheck.fractionDigits,
         ),
-        occurredAt: DateTime.now(),
+        occurredAt: widget.initialEntry?.occurredAt ?? DateTime.now(),
+        createdAt: widget.initialEntry?.createdAt,
       ),
     );
   }
@@ -342,7 +381,7 @@ class _MoneyEntryFormDialogState extends State<MoneyEntryFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add an entry'),
+      title: Text(widget.initialEntry == null ? 'Add an entry' : 'Edit entry'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -367,6 +406,7 @@ class _MoneyEntryFormDialogState extends State<MoneyEntryFormDialog> {
                 }),
               ),
               TextFormField(
+                key: const ValueKey('entry-category'),
                 controller: _category,
                 decoration: const InputDecoration(
                   labelText: 'Category',
@@ -378,12 +418,14 @@ class _MoneyEntryFormDialogState extends State<MoneyEntryFormDialog> {
                     (value ?? '').trim().isEmpty ? 'Enter a category.' : null,
               ),
               TextFormField(
+                key: const ValueKey('entry-note'),
                 controller: _note,
                 decoration: const InputDecoration(labelText: 'Note (optional)'),
                 textCapitalization: TextCapitalization.sentences,
                 maxLength: 240,
               ),
               TextFormField(
+                key: const ValueKey('entry-amount'),
                 controller: _amount,
                 decoration: InputDecoration(
                   labelText: 'Amount (${widget.paycheck.currencyCode})',
@@ -402,7 +444,12 @@ class _MoneyEntryFormDialogState extends State<MoneyEntryFormDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _save, child: const Text('Save entry')),
+        FilledButton(
+          onPressed: _save,
+          child: Text(
+            widget.initialEntry == null ? 'Save entry' : 'Save changes',
+          ),
+        ),
       ],
     );
   }

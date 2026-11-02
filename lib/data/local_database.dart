@@ -2,28 +2,45 @@ import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
 class LocalDatabase {
-  LocalDatabase._();
+  LocalDatabase._({DatabaseFactory? factory, String? databasePath})
+    : _factory = factory,
+      _databasePath = databasePath;
+
+  LocalDatabase.forTesting({
+    required DatabaseFactory factory,
+    required String databasePath,
+  }) : this._(factory: factory, databasePath: databasePath);
 
   static final LocalDatabase instance = LocalDatabase._();
   static const _databaseName = 'paycheck_tracker.db';
   static const _databaseVersion = 2;
 
+  final DatabaseFactory? _factory;
+  final String? _databasePath;
   Database? _database;
 
   Future<Database> get database async {
     final existing = _database;
     if (existing != null) return existing;
 
-    final databasePath = path.join(await getDatabasesPath(), _databaseName);
-    final opened = await openDatabase(
+    final databasePath =
+        _databasePath ?? path.join(await getDatabasesPath(), _databaseName);
+    final opened = await (_factory ?? databaseFactory).openDatabase(
       databasePath,
-      version: _databaseVersion,
-      onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
-      onCreate: _createSchema,
-      onUpgrade: _upgradeSchema,
+      options: OpenDatabaseOptions(
+        version: _databaseVersion,
+        onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
+        onCreate: _createSchema,
+        onUpgrade: _upgradeSchema,
+      ),
     );
     _database = opened;
     return opened;
+  }
+
+  Future<void> close() async {
+    await _database?.close();
+    _database = null;
   }
 
   Future<void> _createSchema(Database db, int version) async {

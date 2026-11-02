@@ -52,6 +52,41 @@ class _PaycheckHomePageState extends State<PaycheckHomePage> {
     if (mounted) await _reload();
   }
 
+  Future<void> _editPaycheck(Paycheck paycheck) async {
+    final updated = await showDialog<Paycheck>(
+      context: context,
+      builder: (_) => PaycheckFormDialog(initialPaycheck: paycheck),
+    );
+    if (updated == null || !mounted) return;
+    await widget.repository.updatePaycheck(updated);
+    await _reload();
+  }
+
+  Future<void> _deletePaycheck(Paycheck paycheck) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete paycheck?'),
+        content: const Text(
+          'This also deletes its expense and savings entries.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete != true || !mounted) return;
+    await widget.repository.deletePaycheck(paycheck.id!);
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,6 +121,8 @@ class _PaycheckHomePageState extends State<PaycheckHomePage> {
               return _PaycheckCard(
                 paycheck: paycheck,
                 onTap: () => _openPaycheck(paycheck),
+                onEdit: () => _editPaycheck(paycheck),
+                onDelete: () => _deletePaycheck(paycheck),
               );
             },
           );
@@ -118,10 +155,17 @@ class _Intro extends StatelessWidget {
 }
 
 class _PaycheckCard extends StatelessWidget {
-  const _PaycheckCard({required this.paycheck, required this.onTap});
+  const _PaycheckCard({
+    required this.paycheck,
+    required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final Paycheck paycheck;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -142,15 +186,31 @@ class _PaycheckCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(DateFormat.yMMMd().format(paycheck.payDate)),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '${paycheck.currencyCode} ${formatMinorUnits(paycheck.netMinor, fractionDigits: paycheck.fractionDigits)}',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${paycheck.currencyCode} ${formatMinorUnits(paycheck.netMinor, fractionDigits: paycheck.fractionDigits)}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text('net pay', style: theme.textTheme.labelSmall),
+              ],
             ),
-            Text('net pay', style: theme.textTheme.labelSmall),
+            PopupMenuButton<String>(
+              tooltip: 'Paycheck options',
+              onSelected: (action) {
+                if (action == 'edit') onEdit();
+                if (action == 'delete') onDelete();
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'edit', child: Text('Edit')),
+                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              ],
+            ),
           ],
         ),
         onTap: onTap,
@@ -215,7 +275,9 @@ class _LoadError extends StatelessWidget {
 }
 
 class PaycheckFormDialog extends StatefulWidget {
-  const PaycheckFormDialog({super.key});
+  const PaycheckFormDialog({super.key, this.initialPaycheck});
+
+  final Paycheck? initialPaycheck;
 
   @override
   State<PaycheckFormDialog> createState() => _PaycheckFormDialogState();
@@ -223,12 +285,30 @@ class PaycheckFormDialog extends StatefulWidget {
 
 class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _label = TextEditingController();
-  final _currency = TextEditingController();
-  final _gross = TextEditingController();
-  final _tax = TextEditingController(text: '0');
-  DateTime _payDate = DateTime.now();
-  int _fractionDigits = 2;
+  late final _label = TextEditingController(
+    text: widget.initialPaycheck?.label ?? '',
+  );
+  late final _currency = TextEditingController(
+    text: widget.initialPaycheck?.currencyCode ?? '',
+  );
+  late final _gross = TextEditingController(
+    text: widget.initialPaycheck == null
+        ? ''
+        : formatMinorUnits(
+            widget.initialPaycheck!.grossMinor,
+            fractionDigits: widget.initialPaycheck!.fractionDigits,
+          ),
+  );
+  late final _tax = TextEditingController(
+    text: widget.initialPaycheck == null
+        ? '0'
+        : formatMinorUnits(
+            widget.initialPaycheck!.taxWithheldMinor,
+            fractionDigits: widget.initialPaycheck!.fractionDigits,
+          ),
+  );
+  late DateTime _payDate = widget.initialPaycheck?.payDate ?? DateTime.now();
+  late int _fractionDigits = widget.initialPaycheck?.fractionDigits ?? 2;
   String? _formError;
 
   @override
@@ -276,12 +356,14 @@ class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
     }
     Navigator.of(context).pop(
       Paycheck(
+        id: widget.initialPaycheck?.id,
         label: _label.text.trim(),
         payDate: _payDate,
         currencyCode: currencyCode,
         grossMinor: gross,
         taxWithheldMinor: tax,
         fractionDigits: _fractionDigits,
+        createdAt: widget.initialPaycheck?.createdAt,
       ),
     );
   }
@@ -289,7 +371,9 @@ class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add paycheck'),
+      title: Text(
+        widget.initialPaycheck == null ? 'Add paycheck' : 'Edit paycheck',
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -297,6 +381,7 @@ class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
+                key: const ValueKey('paycheck-label'),
                 controller: _label,
                 decoration: const InputDecoration(
                   labelText: 'Label (optional)',
@@ -305,6 +390,7 @@ class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
                 maxLength: 80,
               ),
               TextFormField(
+                key: const ValueKey('paycheck-currency'),
                 controller: _currency,
                 decoration: const InputDecoration(
                   labelText: 'Currency code',
@@ -335,6 +421,7 @@ class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
                 }),
               ),
               TextFormField(
+                key: const ValueKey('paycheck-gross'),
                 controller: _gross,
                 decoration: const InputDecoration(labelText: 'Gross pay'),
                 keyboardType: const TextInputType.numberWithOptions(
@@ -343,6 +430,7 @@ class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
                 validator: _validateAmount,
               ),
               TextFormField(
+                key: const ValueKey('paycheck-tax'),
                 controller: _tax,
                 decoration: const InputDecoration(labelText: 'Tax withheld'),
                 keyboardType: const TextInputType.numberWithOptions(
@@ -377,7 +465,12 @@ class _PaycheckFormDialogState extends State<PaycheckFormDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _save, child: const Text('Save paycheck')),
+        FilledButton(
+          onPressed: _save,
+          child: Text(
+            widget.initialPaycheck == null ? 'Save paycheck' : 'Save changes',
+          ),
+        ),
       ],
     );
   }
