@@ -27,4 +27,6 @@ test('recognizes common merchants and phrases without matching inside unrelated 
 test('normalizes Arabic diacritics and common alef variants', () => {
   assert.equal(inferCategory('إِيجَار الشقة'), 'housing');
   assert.equal(inferCategory('فاتورة الكِهرباء'), 'utilities');
+  assert.equal(inferCategory('مولدة'), 'utilities');
+  assert.equal(inferCategory('اشتراك المولدة'), 'utilities');
 });
