@@ -2,9 +2,7 @@ import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
 class LocalDatabase {
-  LocalDatabase._({DatabaseFactory? factory, String? databasePath})
-    : _factory = factory,
-      _databasePath = databasePath;
+  LocalDatabase._({this._factory, this._databasePath});
 
   LocalDatabase.forTesting({
     required DatabaseFactory factory,

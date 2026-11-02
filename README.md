@@ -15,3 +15,7 @@ The app is local-only. Financial records stay on the device in a local database;
 - Choose the currency code and its decimal precision per paycheck.
 
 The SQLite repository is in `lib/data`, domain models are in `lib/models`, and screens are in `lib/screens`. Tests cover amount handling, totals, repository updates, database migration, and edit dialogs.
+
+## iOS checks
+
+`.github/workflows/ios.yml` runs on every push and pull request. GitHub Actions uses a macOS runner to check formatting, analyze Dart code, run tests, and build an unsigned iOS Simulator app. The generated iOS bundle identifier is a development placeholder and must be replaced before App Store submission.
