@@ -65,6 +65,7 @@
           <article class="panel activity-panel">
             <div class="panel-heading"><div><p class="eyebrow" data-i18n="detailsEyebrow">THE DETAILS</p><h2 id="activity-title" data-i18n="recentActivity">Recent activity</h2></div><button class="text-button" id="add-entry" disabled data-i18n="addEntry">＋ Add entry</button></div>
             <p id="category-drop-help" class="category-drop-help" data-i18n="categoryDropHelp">Hold the grip on an expense, then drop it on a category to move it.</p>
+            <button id="manage-categories" class="text-button category-manage" type="button" data-i18n="manageCategories">＋ Manage categories</button>
             <div id="category-drop-zones" class="category-drop-zones" aria-hidden="true"></div>
             <p id="category-drop-status" class="visually-hidden" aria-live="polite"></p>
             <div id="activity-list" class="activity-list"></div>
@@ -94,10 +95,21 @@
         <label><span data-i18n="type">Type</span><select name="kind"><option value="expense" data-i18n="expense">Expense</option><option value="saving" data-i18n="savingsContribution">Savings contribution</option></select></label>
         <label><span data-i18n="description">What was this for?</span><input name="note" maxlength="240" data-i18n-placeholder="descriptionHint" placeholder="e.g. groceries, rent, electricity" required></label>
         <p class="category-preview"><span id="category-preview-label" data-i18n="categorySuggested">Automatically grouped under</span> <strong id="category-preview">Other</strong></p>
-        <label id="category-override-label" hidden><span data-i18n="categoryOverride">Category override</span><select name="categoryOverride"><option value="auto" data-i18n="categoryAuto">Automatic</option><option value="housing" data-i18n="category.housing">Housing</option><option value="food" data-i18n="category.food">Food &amp; dining</option><option value="transport" data-i18n="category.transport">Transport</option><option value="utilities" data-i18n="category.utilities">Bills &amp; utilities</option><option value="health" data-i18n="category.health">Health</option><option value="shopping" data-i18n="category.shopping">Shopping</option><option value="subscriptions" data-i18n="category.subscriptions">Subscriptions</option><option value="education" data-i18n="category.education">Education</option><option value="travel" data-i18n="category.travel">Travel</option><option value="other" data-i18n="category.other">Other</option></select><small class="form-hint" data-i18n="categoryOverrideHelp">Choose a category or leave Automatic. You can also drag an expense to a category.</small></label>
+        <label id="category-override-label" hidden><span data-i18n="categoryOverride">Category override</span><select name="categoryOverride"><option value="auto" data-i18n="categoryAuto">Automatic</option><option value="housing" data-i18n="category.housing">Housing</option><option value="food" data-i18n="category.food">Food &amp; dining</option><option value="transport" data-i18n="category.transport">Transport</option><option value="utilities" data-i18n="category.utilities">Bills &amp; utilities</option><option value="health" data-i18n="category.health">Health</option><option value="shopping" data-i18n="category.shopping">Shopping</option><option value="subscriptions" data-i18n="category.subscriptions">Subscriptions</option><option value="education" data-i18n="category.education">Education</option><option value="travel" data-i18n="category.travel">Travel</option><option value="other" data-i18n="category.other">Other</option><optgroup id="custom-category-options" label="Custom categories" hidden></optgroup></select><small class="form-hint" data-i18n="categoryOverrideHelp">Choose a category or leave Automatic. You can also drag an expense to a category.</small></label>
         <label><span data-i18n="amount">Amount</span> <span id="entry-currency-label"></span><input name="amount" inputmode="decimal" placeholder="0.00" required></label>
         <p class="form-error" id="entry-error" role="alert"></p>
         <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="entry-dialog" data-i18n="cancel">Cancel</button><button class="button button-primary" type="submit" data-i18n="saveEntry">Save entry</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="categories-dialog" class="form-dialog">
+      <form id="categories-form" method="dialog">
+        <div class="dialog-heading"><div><p class="eyebrow" data-i18n="categoryOverride">CATEGORIES</p><h2 data-i18n="manageCategories">Manage categories</h2></div><button class="icon-button" type="button" data-close="categories-dialog" data-i18n-aria-label="close" aria-label="Close">×</button></div>
+        <label><span data-i18n="customCategoryName">New category name</span><input id="custom-category-name" maxlength="32" data-i18n-placeholder="customCategoryHint" placeholder="e.g. Pets"></label>
+        <p class="form-error" id="category-error" role="alert"></p>
+        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="categories-dialog" data-i18n="done">Done</button><button class="button button-primary" type="submit" data-i18n="addCategory">Add category</button></div>
+        <ul id="custom-category-list" class="custom-category-list"></ul>
+        <p class="form-hint" data-i18n="deleteCategoryHelp">Removing a category keeps its expenses and returns them to automatic grouping.</p>
       </form>
     </dialog>
 

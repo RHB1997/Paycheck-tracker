@@ -52,3 +52,8 @@ test('supports a saved category override and returns to automatic classification
   assert.deepEqual(resolveEntryCategory('مولدة', 'expense', 'auto'), { category: 'utilities', categorySource: 'automatic' });
   assert.deepEqual(resolveEntryCategory('rent', 'saving', 'food'), { category: 'savings', categorySource: 'automatic' });
 });
+
+test('accepts a saved custom category override only when it exists', () => {
+  assert.deepEqual(resolveEntryCategory('pet food', 'expense', 'custom:1', ['custom:1']), { category: 'custom:1', categorySource: 'manual' });
+  assert.deepEqual(resolveEntryCategory('pet food', 'expense', 'custom:deleted', ['custom:1']), { category: 'food', categorySource: 'automatic' });
+});

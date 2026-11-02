@@ -1,5 +1,8 @@
 const STORAGE_KEY = 'paycheck-tracker-data-v1';
-const STORAGE_VERSION = 3;
+const STORAGE_VERSION = 4;
+const BUILTIN_CATEGORY_KEYS = ['housing', 'food', 'transport', 'utilities', 'health', 'shopping', 'subscriptions', 'education', 'travel', 'savings', 'other'];
+
+import { inferCategory } from './categories.js';
 
 export class LocalStore {
   constructor(storage = globalThis.localStorage) {
@@ -10,10 +13,13 @@ export class LocalStore {
   read() {
     try {
       const saved = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? '{"paychecks":[]}');
-      if (!Array.isArray(saved.paychecks)) return { version: STORAGE_VERSION, paychecks: [] };
-      if (saved.version === STORAGE_VERSION) return saved;
+      if (!Array.isArray(saved.paychecks)) return { version: STORAGE_VERSION, paychecks: [], customCategories: [] };
+      if (saved.version === STORAGE_VERSION) {
+        return { ...saved, customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [] };
+      }
       const migrated = {
         version: STORAGE_VERSION,
+        customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [],
         paychecks: saved.paychecks.map((old) => {
           const entries = Array.isArray(old.entries) ? old.entries.map((entry) => {
             const savedEntry = { ...entry };
@@ -36,7 +42,7 @@ export class LocalStore {
       catch { /* Keep showing migrated records if the browser refuses the rewrite. */ }
       return migrated;
     } catch {
-      return { version: STORAGE_VERSION, paychecks: [] };
+      return { version: STORAGE_VERSION, paychecks: [], customCategories: [] };
     }
   }
 
@@ -49,6 +55,52 @@ export class LocalStore {
   listEntries(paycheckId) {
     return (this.getPaycheck(paycheckId)?.entries ?? []).slice()
       .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || b.id - a.id);
+  }
+
+  listCustomCategories() {
+    return [...this.read().customCategories].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  saveCustomCategory(name) {
+    const normalizedName = String(name ?? '').normalize('NFKC').trim();
+    if (!normalizedName || normalizedName.length > 32) {
+      const error = new TypeError('Enter a category name of 1 to 32 characters.');
+      error.code = 'invalidCategoryName';
+      throw error;
+    }
+    const data = this.read();
+    const normalizedKey = normalizedName.toLocaleLowerCase();
+    if (BUILTIN_CATEGORY_KEYS.includes(normalizedKey) || data.customCategories.some((item) => item.name.normalize('NFKC').trim().toLocaleLowerCase() === normalizedKey)) {
+      const error = new TypeError('That category already exists.');
+      error.code = 'duplicateCategory';
+      throw error;
+    }
+    const usedIds = [
+      ...data.customCategories.map((item) => item.id),
+      ...data.paychecks.flatMap((paycheck) => paycheck.entries.map((entry) => entry.category)),
+    ];
+    const nextId = Math.max(0, ...usedIds.map((id) => Number(String(id).match(/^custom:(\d+)$/)?.[1] ?? 0))) + 1;
+    const id = `custom:${nextId}`;
+    data.customCategories.push({ id, name: normalizedName });
+    data.version = STORAGE_VERSION;
+    this.write(data);
+    return id;
+  }
+
+  deleteCustomCategory(id) {
+    const data = this.read();
+    if (!data.customCategories.some((item) => item.id === id)) return;
+    data.customCategories = data.customCategories.filter((item) => item.id !== id);
+    for (const paycheck of data.paychecks) {
+      for (const entry of paycheck.entries) {
+        if (entry.category === id) {
+          entry.category = inferCategory(entry.note, entry.kind);
+          entry.categorySource = 'automatic';
+        }
+      }
+    }
+    data.version = STORAGE_VERSION;
+    this.write(data);
   }
 
   savePaycheck(values) {

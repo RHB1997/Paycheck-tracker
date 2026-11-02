@@ -35,8 +35,22 @@ function recordUsdLabel(record) {
   return t('usdApprox', { amount, date: asOf ? formatDate(asOf, locale()) : '—' });
 }
 function categoryName(category, text = '', kind = 'expense') {
+  const custom = store.listCustomCategories().find((item) => item.id === category);
+  if (custom) return custom.name;
   const key = CATEGORIES.includes(category) ? category : inferCategory(text || category, kind);
   return t(`category.${key}`);
+}
+function refreshCustomCategoryOptions() {
+  const select = $('#entry-form').elements.categoryOverride;
+  const optgroup = select.querySelector('optgroup');
+  optgroup.replaceChildren(...store.listCustomCategories().map((item) => new Option(item.name, item.id)));
+  optgroup.hidden = optgroup.children.length === 0;
+}
+function renderCustomCategoryList() {
+  const categories = store.listCustomCategories();
+  $('#custom-category-list').innerHTML = categories.length ? categories.map((item) =>
+    `<li><span>${h(item.name)}</span><button type="button" class="button button-secondary" data-remove-category="${h(item.id)}">${h(t('deleteCategory'))}</button></li>`).join('')
+    : `<li class="custom-category-empty">${h(t('noCustomCategories'))}</li>`;
 }
 function translateError(error) {
   if (error.code) return t(error.code, error.values);
@@ -85,8 +99,9 @@ function render() {
   const entries = paycheck ? store.listEntries(paycheck.id) : [];
   const totals = paycheck ? summarize(paycheck, entries) : null;
   $('#category-drop-help').hidden = !paycheck;
-  $('#category-drop-zones').innerHTML = paycheck ? CATEGORIES.filter((category) => category !== 'savings').map((category) =>
-    `<span class="category-drop-zone" data-drop-category="${category}" aria-label="${h(t(`category.${category}`))}" title="${h(t(`category.${category}`))}">${h(t(`category.${category}`))}</span>`).join('') : '';
+  const dropCategories = [...CATEGORIES.filter((category) => category !== 'savings').map((id) => ({ id, name: t(`category.${id}`) })), ...store.listCustomCategories()];
+  $('#category-drop-zones').innerHTML = paycheck ? dropCategories.map(({ id, name }) =>
+    `<span class="category-drop-zone" data-drop-category="${h(id)}" aria-label="${h(name)}" title="${h(name)}">${h(name)}</span>`).join('') : '';
   $('#add-entry').disabled = !paycheck;
   $('#activity-title').textContent = paycheck ? (paycheck.label || t('paycheckActivity')) : t('recentActivity');
   if (!paycheck) {
@@ -152,7 +167,7 @@ function openPaycheck(item = null) {
 function updateCategoryPreview() {
   const kind = $('#entry-form').elements.kind.value;
   const override = $('#entry-form').elements.categoryOverride.value;
-  const resolved = resolveEntryCategory($('#entry-form').elements.note.value, kind, override);
+  const resolved = resolveEntryCategory($('#entry-form').elements.note.value, kind, override, store.listCustomCategories().map((item) => item.id));
   $('#category-preview').textContent = categoryName(resolved.category);
   $('#category-preview-label').textContent = t(resolved.categorySource === 'manual' ? 'categorySelected' : 'categorySuggested');
   $('#category-override-label').hidden = kind === 'saving';
@@ -164,6 +179,7 @@ function openEntry(item = null) {
   editingEntryId = item?.id ?? null;
   const form = $('#entry-form');
   form.reset();
+  refreshCustomCategoryOptions();
   form.elements.kind.value = item?.kind ?? 'expense';
   form.elements.note.value = item ? entryDescription(item) : '';
   form.elements.categoryOverride.value = item?.categorySource === 'manual' ? item.category : 'auto';
@@ -213,6 +229,8 @@ $('#language-toggle').addEventListener('click', () => {
   language = language === 'en' ? 'ar' : 'en';
   try { localStorage.setItem(LANGUAGE_KEY, language); } catch { /* Language can still change for this session. */ }
   applyLanguage();
+  refreshCustomCategoryOptions();
+  if ($('#categories-dialog').open) renderCustomCategoryList();
   render();
   if (paycheckDialog.open) {
     $('#paycheck-dialog-title').textContent = t(editingPaycheckId ? 'editPaycheckTitle' : 'addPaycheckTitle');
@@ -223,6 +241,22 @@ $('#language-toggle').addEventListener('click', () => {
 $('#add-paycheck').addEventListener('click', () => openPaycheck());
 $('#add-paycheck-inline').addEventListener('click', () => openPaycheck());
 $('#add-entry').addEventListener('click', () => openEntry());
+$('#manage-categories').addEventListener('click', () => { renderCustomCategoryList(); $('#category-error').textContent = ''; $('#custom-category-name').value = ''; $('#categories-dialog').showModal(); });
+$('#categories-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  try {
+    store.saveCustomCategory($('#custom-category-name').value);
+    $('#custom-category-name').value = '';
+    $('#category-error').textContent = '';
+    renderCustomCategoryList(); refreshCustomCategoryOptions(); render();
+  } catch (error) { $('#category-error').textContent = translateError(error); }
+});
+$('#custom-category-list').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-remove-category]');
+  if (!button) return;
+  store.deleteCustomCategory(button.dataset.removeCategory);
+  renderCustomCategoryList(); refreshCustomCategoryOptions(); render();
+});
 $('#entry-form').elements.kind.addEventListener('change', updateCategoryPreview);
 $('#entry-form').elements.note.addEventListener('input', updateCategoryPreview);
 $('#entry-form').elements.categoryOverride.addEventListener('change', updateCategoryPreview);
@@ -287,7 +321,7 @@ function finishCategoryDrag(event) {
   const entry = store.listEntries(paycheck.id).find((item) => item.id === current.entryId);
   if (!entry) return;
   store.saveEntry(paycheck.id, categoryOverridePatch(entry, category));
-  $('#category-drop-status').textContent = t('categoryDropDone', { category: t(`category.${category}`) });
+  $('#category-drop-status').textContent = t('categoryDropDone', { category: categoryName(category) });
   render();
 }
 document.addEventListener('pointerup', finishCategoryDrag);
@@ -328,7 +362,7 @@ $('#entry-form').addEventListener('submit', (event) => {
   const kind = form.elements.kind.value;
   const description = form.elements.note.value.trim();
   if (!description) { $('#entry-error').textContent = t('descriptionRequired'); return; }
-  const category = resolveEntryCategory(description, kind, form.elements.categoryOverride.value);
+  const category = resolveEntryCategory(description, kind, form.elements.categoryOverride.value, store.listCustomCategories().map((item) => item.id));
   withSubmitState(form, t('rateLoading'), async () => {
     const rate = await getUsdRateSnapshot(paycheck.currencyCode, { storage: store.storage });
     store.saveEntry(selectedId, {

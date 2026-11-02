@@ -113,5 +113,29 @@ test('migrates old entries so legacy descriptions are separate before any catego
   const saved = store.listEntries(13)[0];
   assert.equal(saved.category, 'utilities');
   assert.equal(entryDescription(saved), 'اشتراك المولدة');
-  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 3);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 4);
+});
+
+test('stores custom categories locally and returns expenses to automatic grouping when one is removed', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalStore(storage);
+  const paycheckId = store.savePaycheck({ label: '', payDate: '2026-01-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 100000, usdMinor: 100000 });
+  const categoryId = store.saveCustomCategory('  Pets  ');
+  assert.equal(store.listCustomCategories()[0].name, 'Pets');
+  store.saveEntry(paycheckId, { kind: 'expense', category: categoryId, categorySource: 'manual', note: 'dog food', amountMinor: 1200 });
+  const reloaded = new LocalStore(storage);
+  assert.equal(reloaded.listEntries(paycheckId)[0].category, categoryId);
+  reloaded.deleteCustomCategory(categoryId);
+  const entry = reloaded.listEntries(paycheckId)[0];
+  assert.equal(entry.note, 'dog food');
+  assert.equal(entry.category, 'food');
+  assert.equal(entry.categorySource, 'automatic');
+  assert.deepEqual(reloaded.listCustomCategories(), []);
+});
+
+test('rejects empty, too long, duplicate, and built-in custom category names', () => {
+  const store = setup();
+  store.saveCustomCategory('Pets');
+  for (const name of ['', 'x'.repeat(33)]) assert.throws(() => store.saveCustomCategory(name), { code: 'invalidCategoryName' });
+  for (const name of ['pets', 'Food']) assert.throws(() => store.saveCustomCategory(name), { code: 'duplicateCategory' });
 });
