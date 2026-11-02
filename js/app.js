@@ -1,4 +1,4 @@
-import { inferCategory, CATEGORIES } from './categories.js';
+import { inferCategory, CATEGORIES, resolveEntryCategory } from './categories.js';
 import { entryDescription } from './entries.js';
 import { getUsdRateSnapshot, convertMinorToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
@@ -17,6 +17,7 @@ let selectedId = null;
 let editingPaycheckId = null;
 let editingEntryId = null;
 let pendingDelete = null;
+let dragState = null;
 
 function t(key, values) { return translate(language, key, values); }
 function locale() { return language === 'ar' ? 'ar-IQ' : 'en-US'; }
@@ -83,6 +84,9 @@ function render() {
   const paycheck = store.getPaycheck(selectedId);
   const entries = paycheck ? store.listEntries(paycheck.id) : [];
   const totals = paycheck ? summarize(paycheck, entries) : null;
+  $('#category-drop-help').hidden = !paycheck;
+  $('#category-drop-zones').innerHTML = paycheck ? CATEGORIES.filter((category) => category !== 'savings').map((category) =>
+    `<span class="category-drop-zone" data-drop-category="${category}" aria-label="${h(t(`category.${category}`))}" title="${h(t(`category.${category}`))}">${h(t(`category.${category}`))}</span>`).join('') : '';
   $('#add-entry').disabled = !paycheck;
   $('#activity-title').textContent = paycheck ? (paycheck.label || t('paycheckActivity')) : t('recentActivity');
   if (!paycheck) {
@@ -118,7 +122,8 @@ function render() {
     const code = item.currencyCode || paycheck.currencyCode;
     const digits = item.fractionDigits ?? paycheck.fractionDigits;
     const description = entryDescription(item) || categoryName(item.category, item.note, item.kind);
-    return `<div class="activity-row"><span class="activity-symbol ${saving ? 'saving' : 'expense'}" aria-hidden="true">${saving ? '⌖' : '↘'}</span>
+    return `<div class="activity-row ${!saving ? 'activity-row-draggable' : ''}" data-entry-row="${item.id}"><span class="activity-symbol ${saving ? 'saving' : 'expense'}" aria-hidden="true">${saving ? '⌖' : '↘'}</span>
+      ${!saving ? `<span class="drag-handle" aria-label="${h(t('categoryDragHandle'))}" title="${h(t('categoryDragHandle'))}" data-drag-entry="${item.id}">⠿</span>` : ''}
       <div class="activity-info"><div class="activity-name" dir="auto">${h(description)}</div><div class="activity-meta">${h(categoryName(item.category, item.note, item.kind))} · ${formatDate(item.occurredAt, locale())}</div><div class="fx-equivalent">${h(recordUsdLabel(item))}</div></div>
       <div class="activity-amount ${saving ? 'saving' : 'expense'}">${saving ? '+' : '−'}${cash(item.amountMinor, code, digits)}</div>
       <div class="row-actions"><button class="icon-button" data-menu="entry" data-id="${item.id}" aria-label="${h(t('edit'))} ${h(description)}" aria-haspopup="true">···</button></div></div>`;
@@ -146,7 +151,11 @@ function openPaycheck(item = null) {
 
 function updateCategoryPreview() {
   const kind = $('#entry-form').elements.kind.value;
-  $('#category-preview').textContent = categoryName(inferCategory($('#entry-form').elements.note.value, kind));
+  const override = $('#entry-form').elements.categoryOverride.value;
+  const resolved = resolveEntryCategory($('#entry-form').elements.note.value, kind, override);
+  $('#category-preview').textContent = categoryName(resolved.category);
+  $('#category-preview-label').textContent = t(resolved.categorySource === 'manual' ? 'categorySelected' : 'categorySuggested');
+  $('#category-override-label').hidden = kind === 'saving';
 }
 
 function openEntry(item = null) {
@@ -157,6 +166,7 @@ function openEntry(item = null) {
   form.reset();
   form.elements.kind.value = item?.kind ?? 'expense';
   form.elements.note.value = item ? entryDescription(item) : '';
+  form.elements.categoryOverride.value = item?.categorySource === 'manual' ? item.category : 'auto';
   form.elements.amount.value = item ? (item.amountMinor / 10 ** (item.fractionDigits ?? paycheck.fractionDigits)).toFixed(item.fractionDigits ?? paycheck.fractionDigits) : '';
   $('#entry-currency-label').textContent = `(${paycheck.currencyCode})`;
   $('#entry-dialog-title').textContent = t(item ? 'editEntryTitle' : 'addEntryTitle');
@@ -215,6 +225,7 @@ $('#add-paycheck-inline').addEventListener('click', () => openPaycheck());
 $('#add-entry').addEventListener('click', () => openEntry());
 $('#entry-form').elements.kind.addEventListener('change', updateCategoryPreview);
 $('#entry-form').elements.note.addEventListener('input', updateCategoryPreview);
+$('#entry-form').elements.categoryOverride.addEventListener('change', updateCategoryPreview);
 $('#paycheck-list').addEventListener('click', (event) => {
   const menuButton = event.target.closest('[data-menu]');
   if (menuButton) { event.stopPropagation(); menuFor(menuButton); return; }
@@ -227,6 +238,53 @@ $('#paycheck-list').addEventListener('keydown', (event) => {
   }
 });
 $('#activity-list').addEventListener('click', (event) => { const button = event.target.closest('[data-menu]'); if (button) menuFor(button); });
+$('#activity-list').addEventListener('pointerdown', (event) => {
+  const handle = event.target.closest('[data-drag-entry]');
+  if (!handle || event.button !== 0) return;
+  const row = handle.closest('[data-entry-row]');
+  dragState = { entryId: Number(handle.dataset.dragEntry), row, pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false, timer: null };
+  dragState.timer = setTimeout(() => {
+    if (!dragState) return;
+    dragState.dragging = true;
+    dragState.row.classList.add('is-dragging');
+    try { dragState.row.setPointerCapture(dragState.pointerId); } catch { /* Continue with document pointer events. */ }
+    $('#category-drop-help').classList.add('drag-active');
+    $('#category-drop-status').textContent = t('categoryDropHelp');
+  }, 420);
+});
+document.addEventListener('pointermove', (event) => {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  if (!dragState.dragging) {
+    if (Math.hypot(event.clientX - dragState.x, event.clientY - dragState.y) > 10) {
+      clearTimeout(dragState.timer);
+      dragState = null;
+    }
+    return;
+  }
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-drop-category]');
+  document.querySelectorAll('.category-drop-zone.is-target').forEach((zone) => zone.classList.remove('is-target'));
+  target?.classList.add('is-target');
+});
+function finishCategoryDrag(event) {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  clearTimeout(dragState.timer);
+  const current = dragState;
+  const target = current.dragging && event.type !== 'pointercancel'
+    ? document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-drop-category]') : null;
+  document.querySelectorAll('.category-drop-zone.is-target').forEach((zone) => zone.classList.remove('is-target'));
+  current.row.classList.remove('is-dragging');
+  $('#category-drop-help').classList.remove('drag-active');
+  dragState = null;
+  if (!target) return;
+  const category = target.dataset.dropCategory;
+  const paycheck = store.getPaycheck(selectedId);
+  if (!paycheck) return;
+  store.saveEntry(paycheck.id, { id: current.entryId, category, categorySource: 'manual' });
+  $('#category-drop-status').textContent = t('categoryDropDone', { category: t(`category.${category}`) });
+  render();
+}
+document.addEventListener('pointerup', finishCategoryDrag);
+document.addEventListener('pointercancel', finishCategoryDrag);
 document.addEventListener('click', (event) => { if (!event.target.closest('.row-actions')) document.querySelectorAll('.row-menu').forEach((menu) => menu.remove()); });
 document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.close}`).close()));
 
@@ -263,10 +321,11 @@ $('#entry-form').addEventListener('submit', (event) => {
   const kind = form.elements.kind.value;
   const description = form.elements.note.value.trim();
   if (!description) { $('#entry-error').textContent = t('descriptionRequired'); return; }
+  const category = resolveEntryCategory(description, kind, form.elements.categoryOverride.value);
   withSubmitState(form, t('rateLoading'), async () => {
     const rate = await getUsdRateSnapshot(paycheck.currencyCode, { storage: store.storage });
     store.saveEntry(selectedId, {
-      ...(editingEntryId ? { id: editingEntryId } : {}), kind, category: inferCategory(description, kind),
+      ...(editingEntryId ? { id: editingEntryId } : {}), kind, ...category,
       note: description, amountMinor, currencyCode: paycheck.currencyCode, fractionDigits: paycheck.fractionDigits,
       usdRate: rate.usdRate, usdMinor: convertMinorToUsdMinor(amountMinor, paycheck.fractionDigits, rate.usdRate),
       usdRateAsOf: rate.usdRateAsOf, usdRateCapturedAt: rate.usdRateCapturedAt,

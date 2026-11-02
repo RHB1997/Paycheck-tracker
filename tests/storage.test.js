@@ -69,3 +69,17 @@ test('retains recorded USD snapshots when reloading local data', () => {
   assert.equal(loaded.getPaycheck(paycheckId).usdMinor, 76);
   assert.equal(loaded.listEntries(paycheckId)[0].usdMinor, 1);
 });
+
+test('persists manually reassigned entry categories through reload and later edits', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalStore(storage);
+  const paycheckId = store.savePaycheck({ label: '', payDate: '2026-01-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 100000, usdMinor: 100000 });
+  store.saveEntry(paycheckId, { kind: 'expense', category: 'utilities', categorySource: 'manual', note: 'generator fee', amountMinor: 2000, usdMinor: 2000, usdRate: 1 });
+  const loaded = new LocalStore(storage);
+  const entry = loaded.listEntries(paycheckId)[0];
+  assert.equal(entry.category, 'utilities');
+  assert.equal(entry.categorySource, 'manual');
+  loaded.saveEntry(paycheckId, { id: entry.id, amountMinor: 2500 });
+  assert.equal(loaded.listEntries(paycheckId)[0].category, 'utilities');
+  assert.equal(loaded.listEntries(paycheckId)[0].categorySource, 'manual');
+});

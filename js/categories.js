@@ -99,3 +99,11 @@ export function inferCategory(description, kind = 'expense') {
 }
 
 export const CATEGORIES = ['housing', 'food', 'transport', 'utilities', 'health', 'shopping', 'subscriptions', 'education', 'travel', 'savings', 'other'];
+
+export function resolveEntryCategory(description, kind = 'expense', override = 'auto') {
+  if (kind === 'saving') return { category: 'savings', categorySource: 'automatic' };
+  if (override !== 'auto' && CATEGORIES.includes(override) && override !== 'savings') {
+    return { category: override, categorySource: 'manual' };
+  }
+  return { category: inferCategory(description, kind), categorySource: 'automatic' };
+}

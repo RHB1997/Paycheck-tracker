@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inferCategory } from '../js/categories.js';
+import { inferCategory, resolveEntryCategory } from '../js/categories.js';
 
 test('categorizes common expenses from English or Arabic descriptions', () => {
   assert.equal(inferCategory('Monthly rent to landlord'), 'housing');
@@ -44,4 +44,11 @@ test('uses context to resolve ambiguous merchant names and descriptions', () => 
 
 test('does not classify an empty description', () => {
   assert.equal(inferCategory('   '), 'other');
+});
+
+test('supports a saved category override and returns to automatic classification', () => {
+  assert.deepEqual(resolveEntryCategory('مولدة', 'expense'), { category: 'utilities', categorySource: 'automatic' });
+  assert.deepEqual(resolveEntryCategory('مولدة', 'expense', 'housing'), { category: 'housing', categorySource: 'manual' });
+  assert.deepEqual(resolveEntryCategory('مولدة', 'expense', 'auto'), { category: 'utilities', categorySource: 'automatic' });
+  assert.deepEqual(resolveEntryCategory('rent', 'saving', 'food'), { category: 'savings', categorySource: 'automatic' });
 });
