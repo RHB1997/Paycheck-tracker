@@ -14,3 +14,17 @@ test('uses savings as the category for saving entries and Other as the fallback'
   assert.equal(inferCategory('emergency fund', 'saving'), 'savings');
   assert.equal(inferCategory('misc payment'), 'other');
 });
+
+test('recognizes common merchants and phrases without matching inside unrelated words', () => {
+  assert.equal(inferCategory('Uber ride'), 'transport');
+  assert.equal(inferCategory('Carrefour groceries'), 'food');
+  assert.equal(inferCategory('Electricity bill'), 'utilities');
+  assert.equal(inferCategory('Amazon shoes'), 'shopping');
+  assert.equal(inferCategory('Doctor appointment'), 'health');
+  assert.equal(inferCategory('care package'), 'other');
+});
+
+test('normalizes Arabic diacritics and common alef variants', () => {
+  assert.equal(inferCategory('إِيجَار الشقة'), 'housing');
+  assert.equal(inferCategory('فاتورة الكِهرباء'), 'utilities');
+});
