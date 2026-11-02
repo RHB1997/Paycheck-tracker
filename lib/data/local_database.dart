@@ -14,10 +14,7 @@ class LocalDatabase {
     final existing = _database;
     if (existing != null) return existing;
 
-    final databasePath = path.join(
-      await getDatabasesPath(),
-      _databaseName,
-    );
+    final databasePath = path.join(await getDatabasesPath(), _databaseName);
     final opened = await openDatabase(
       databasePath,
       version: _databaseVersion,

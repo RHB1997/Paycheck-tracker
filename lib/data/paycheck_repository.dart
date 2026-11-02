@@ -7,7 +7,7 @@ import 'local_database.dart';
 
 class PaycheckRepository {
   PaycheckRepository({LocalDatabase? localDatabase})
-      : _localDatabase = localDatabase ?? LocalDatabase.instance;
+    : _localDatabase = localDatabase ?? LocalDatabase.instance;
 
   final LocalDatabase _localDatabase;
 
@@ -15,15 +15,11 @@ class PaycheckRepository {
     _validatePaycheck(paycheck);
     final db = await _localDatabase.database;
     final now = DateTime.now().toUtc().toIso8601String();
-    return db.insert(
-      'paychecks',
-      {
-        ...paycheck.toMap(),
-        'created_at': now,
-        'updated_at': now,
-      },
-      conflictAlgorithm: ConflictAlgorithm.abort,
-    );
+    return db.insert('paychecks', {
+      ...paycheck.toMap(),
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.abort);
   }
 
   Future<Paycheck?> getPaycheck(int id) async {
@@ -39,10 +35,7 @@ class PaycheckRepository {
 
   Future<List<Paycheck>> listPaychecks() async {
     final db = await _localDatabase.database;
-    final rows = await db.query(
-      'paychecks',
-      orderBy: 'pay_date DESC, id DESC',
-    );
+    final rows = await db.query('paychecks', orderBy: 'pay_date DESC, id DESC');
     return rows.map(Paycheck.fromMap).toList(growable: false);
   }
 
@@ -74,15 +67,11 @@ class PaycheckRepository {
     _validateEntry(entry);
     final db = await _localDatabase.database;
     final now = DateTime.now().toUtc().toIso8601String();
-    return db.insert(
-      'money_entries',
-      {
-        ...entry.toMap(),
-        'created_at': now,
-        'updated_at': now,
-      },
-      conflictAlgorithm: ConflictAlgorithm.abort,
-    );
+    return db.insert('money_entries', {
+      ...entry.toMap(),
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.abort);
   }
 
   Future<List<MoneyEntry>> listEntries(int paycheckId) async {
@@ -151,10 +140,18 @@ class PaycheckRepository {
 
   void _validatePaycheck(Paycheck paycheck) {
     if (paycheck.label.length > 80) {
-      throw ArgumentError.value(paycheck.label, 'label', 'Must be 80 chars or fewer.');
+      throw ArgumentError.value(
+        paycheck.label,
+        'label',
+        'Must be 80 chars or fewer.',
+      );
     }
     if (!RegExp(r'^[A-Z]{3}$').hasMatch(paycheck.currencyCode)) {
-      throw ArgumentError.value(paycheck.currencyCode, 'currencyCode', 'Use a 3-letter uppercase currency code.');
+      throw ArgumentError.value(
+        paycheck.currencyCode,
+        'currencyCode',
+        'Use a 3-letter uppercase currency code.',
+      );
     }
     if (paycheck.grossMinor < 0 ||
         paycheck.taxWithheldMinor < 0 ||
@@ -165,16 +162,32 @@ class PaycheckRepository {
 
   void _validateEntry(MoneyEntry entry) {
     if (entry.paycheckId <= 0) {
-      throw ArgumentError.value(entry.paycheckId, 'paycheckId', 'Must be positive.');
+      throw ArgumentError.value(
+        entry.paycheckId,
+        'paycheckId',
+        'Must be positive.',
+      );
     }
     if (entry.category.isEmpty || entry.category.length > 50) {
-      throw ArgumentError.value(entry.category, 'category', 'Must contain 1 to 50 chars.');
+      throw ArgumentError.value(
+        entry.category,
+        'category',
+        'Must contain 1 to 50 chars.',
+      );
     }
     if (entry.note.length > 240) {
-      throw ArgumentError.value(entry.note, 'note', 'Must be 240 chars or fewer.');
+      throw ArgumentError.value(
+        entry.note,
+        'note',
+        'Must be 240 chars or fewer.',
+      );
     }
     if (entry.amountMinor <= 0) {
-      throw ArgumentError.value(entry.amountMinor, 'amountMinor', 'Must be positive.');
+      throw ArgumentError.value(
+        entry.amountMinor,
+        'amountMinor',
+        'Must be positive.',
+      );
     }
   }
 }

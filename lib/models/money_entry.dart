@@ -11,8 +11,8 @@ class MoneyEntry {
     required this.occurredAt,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now().toUtc(),
-        updatedAt = updatedAt ?? DateTime.now().toUtc();
+  }) : createdAt = createdAt ?? DateTime.now().toUtc(),
+       updatedAt = updatedAt ?? DateTime.now().toUtc();
 
   final int? id;
   final int paycheckId;
@@ -39,13 +39,13 @@ class MoneyEntry {
   }
 
   Map<String, Object?> toMap() => {
-        'paycheck_id': paycheckId,
-        'kind': kind.name,
-        'category': category,
-        'note': note,
-        'amount_minor': amountMinor,
-        'occurred_at': occurredAt.toUtc().toIso8601String(),
-        'created_at': createdAt.toUtc().toIso8601String(),
-        'updated_at': updatedAt.toUtc().toIso8601String(),
-      };
+    'paycheck_id': paycheckId,
+    'kind': kind.name,
+    'category': category,
+    'note': note,
+    'amount_minor': amountMinor,
+    'occurred_at': occurredAt.toUtc().toIso8601String(),
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+  };
 }

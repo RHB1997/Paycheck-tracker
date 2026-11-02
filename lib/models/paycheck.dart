@@ -8,8 +8,8 @@ class Paycheck {
     required this.taxWithheldMinor,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now().toUtc(),
-        updatedAt = updatedAt ?? DateTime.now().toUtc();
+  }) : createdAt = createdAt ?? DateTime.now().toUtc(),
+       updatedAt = updatedAt ?? DateTime.now().toUtc();
 
   final int? id;
   final String label;
@@ -36,14 +36,14 @@ class Paycheck {
   }
 
   Map<String, Object?> toMap() => {
-        'label': label,
-        'pay_date': _dateOnly(payDate),
-        'currency_code': currencyCode,
-        'gross_minor': grossMinor,
-        'tax_withheld_minor': taxWithheldMinor,
-        'created_at': createdAt.toUtc().toIso8601String(),
-        'updated_at': updatedAt.toUtc().toIso8601String(),
-      };
+    'label': label,
+    'pay_date': _dateOnly(payDate),
+    'currency_code': currencyCode,
+    'gross_minor': grossMinor,
+    'tax_withheld_minor': taxWithheldMinor,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+  };
 }
 
 String _dateOnly(DateTime date) {
