@@ -1,6 +1,6 @@
 # Local data design
 
-This app stores financial data on the user's iPhone. It has no account system, remote database, cloud sync, or server-side functions. Flutter's local SQLite support is the initial persistence choice.
+This app stores financial data on the user's iPhone. It has no account system, remote database, cloud sync, or server-side functions. The Flutter data layer uses `sqflite` (SQLite).
 
 ## Records
 
@@ -32,6 +32,8 @@ Remaining amount is calculated as net pay minus expense and savings entries. Exp
 ## Storage and privacy
 
 - Persist records in the app's private iOS container with SQLite.
+- Use foreign keys so deleting a paycheck also deletes its entries.
+- Store paycheck dates as calendar dates and event timestamps in UTC.
 - Keep calculations and reads on-device; do not send financial records to analytics or crash reports.
 - Do not add sign-in or network access for paycheck data.
 - Use integer minor units for money to avoid floating-point rounding errors.
