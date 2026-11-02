@@ -1,45 +1,40 @@
 # Local data design
 
-This app stores financial data on the user's iPhone. It has no account system, remote database, cloud sync, or server-side functions. The Flutter data layer uses `sqflite` (SQLite).
+This is a static web app. It has no account system, remote database, analytics, cloud sync, or server-side functions. Paycheck records are stored in the browser's `localStorage` under the `paycheck-tracker-data-v1` key.
 
 ## Records
 
 ### Paycheck
 
-- `id`: locally generated stable identifier
-- `label`: optional display name, such as "November paycheck"
-- `payDate`: date received
+- `id`: locally generated stable numeric identifier
+- `label`: optional display name
+- `payDate`: calendar date received
 - `currencyCode`: three-letter uppercase currency code
-- `fractionDigits`: number of decimal places used for this paycheck's currency amounts (0–3)
-- `grossMinor`: gross salary in integer minor units
-- `taxWithheldMinor`: tax already withheld, entered or confirmed by the user
+- `fractionDigits`: number of decimal places used by this currency (0–3)
+- `grossMinor`: gross pay in integer minor units
+- `taxWithheldMinor`: tax withheld, supplied by the user
 - `createdAt` and `updatedAt`: local timestamps
-
-Amounts use integer minor units rather than floating-point values. `fractionDigits` defines how many decimal places make up one whole currency unit, so the app does not assume every currency has two. Net pay is calculated as `grossMinor - taxWithheldMinor`. Tax is recorded as supplied by the user; the app does not infer a tax rate or tax liability.
 
 ### Money entry
 
-- `id`: locally generated stable identifier
-- `paycheckId`: paycheck this entry belongs to
+- `id`: locally generated stable numeric identifier
 - `kind`: `expense` or `saving`
 - `category`: user-facing category
 - `note`: optional short description
 - `amountMinor`: positive integer amount
-- `currencyCode`: same currency as the paycheck
-- `occurredAt`, `createdAt`, and `updatedAt`: local timestamps
+- `occurredAt`, `createdAt`, and `updatedAt`: local dates/timestamps
 
-Remaining amount is calculated as net pay minus expense and savings entries. Expenses and savings remain separate in summaries.
+Net pay is gross pay minus tax withheld. Remaining pay is net pay minus expenses and savings. Tax is recorded as supplied by the user; the app does not estimate tax rates or liability. Amounts use integer minor units to avoid floating-point rounding errors.
 
 ## Storage and privacy
 
-- Persist records in the app's private iOS container with SQLite.
-- Use foreign keys so deleting a paycheck also deletes its entries.
-- Store paycheck dates as calendar dates and event timestamps in UTC.
-- Keep calculations and reads on-device; do not send financial records to analytics or crash reports.
-- Do not add sign-in or network access for paycheck data.
-- Use integer minor units for money to avoid floating-point rounding errors.
-- Consider iOS device backups separately from app sync: device backups may include app data. The app can later offer a clear local export/import option if users need portability.
+- All records stay in the current browser profile and site origin.
+- GitHub Pages serves only the static app files and does not receive paycheck data from the app.
+- Local storage is shared by all pages with the same origin. Standard GitHub Pages project sites under one account normally share the account's `github.io` origin, so other pages at that origin could read the saved key. Use a dedicated custom domain/origin before storing real financial records on a shared Pages origin.
+- Browser storage is not encrypted by this app. Anyone with access to the same browser profile may be able to access its data.
+- Clearing site data, changing browsers, or using another device removes access to these locally stored records. There is no backup, export, or synchronization yet.
+- The app makes no network requests for app logic or data. The UI uses system fonts and ships without third-party runtime libraries.
 
-## Initial scope
+## Scope
 
-The first version needs create, read, update, and delete operations for paychecks and money entries, plus local summaries by paycheck. Tax estimates, bank connections, accounts, and cloud synchronization are out of scope.
+Create, read, update, and delete paychecks and money entries, plus summaries by paycheck. Tax estimates, bank connections, accounts, import/export, and cloud synchronization are out of scope.

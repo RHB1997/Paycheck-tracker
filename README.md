@@ -1,21 +1,40 @@
-# Paycheck-tracker
+<div align="center">
 
-An iOS app built with Flutter and Dart to track paychecks, taxes withheld, expenses, and savings.
+# paycheck.
 
-## Data approach
+**Your pay, clearly accounted for.**
 
-The app is local-only. Financial records stay on the device in a local database; the app does not require an account or sync paycheck data to a server. See [LOCAL_DATA.md](LOCAL_DATA.md) for the initial data model and privacy decisions.
+A calm, local-first web app for tracking paychecks, tax withheld, expenses, and savings.
 
-## Current features
+</div>
 
-- Add, edit, and delete paychecks.
-- Record gross pay and tax withheld, then view net pay.
-- Add, edit, and delete expenses and savings entries for each paycheck.
-- Review paycheck totals and remaining balance.
-- Choose the currency code and its decimal precision per paycheck.
+## Run it locally
 
-The SQLite repository is in `lib/data`, domain models are in `lib/models`, and screens are in `lib/screens`. Tests cover amount handling, totals, repository updates, database migration, and edit dialogs.
+Serve the project folder with any static file server, then open its local address in a modern browser. The app has no runtime dependencies or backend.
 
-## iOS checks
+Run the automated checks with:
 
-`.github/workflows/ios.yml` runs on every push and pull request. GitHub Actions uses a macOS runner to check formatting, analyze Dart code, run tests, and build an unsigned iOS Simulator app. The generated iOS bundle identifier is a development placeholder and must be replaced before App Store submission.
+```sh
+npm test
+```
+
+## What it does
+
+- Create, edit, and delete paycheck records.
+- Record gross pay, tax withheld, currency, pay date, and currency decimal precision.
+- Add, edit, and delete expense and savings entries for each paycheck.
+- See net pay, tax, expenses, savings, and remaining balance update immediately.
+- Keep records in the browser's local storage without an account or financial-data server.
+- Use a responsive layout on desktop and mobile browsers.
+
+## Hosting on GitHub
+
+The GitHub Actions workflow tests the app and publishes the static site to GitHub Pages when changes reach `main`. In the repository, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. After the first successful deployment, GitHub will show the public Pages address in that settings screen.
+
+## Privacy and data
+
+Paycheck records are stored in local storage for the browser and site origin being used. They are not sent to GitHub Pages. Clearing browser data or using another browser/device will not carry those records over, so use a trusted personal device and browser. Hosting the static app publicly does not make any stored financial records public.
+
+On GitHub Pages, repositories under one account normally use the same `account.github.io` origin. Browser storage is shared by origin, so other pages served from that same origin could technically access this app's local storage. For real financial records, use a dedicated custom domain/origin or run the app on `localhost` until that is configured.
+
+See [LOCAL_DATA.md](LOCAL_DATA.md) for the data model and limitations.
