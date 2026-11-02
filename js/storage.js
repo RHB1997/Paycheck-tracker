@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'paycheck-tracker-data-v1';
+const STORAGE_VERSION = 3;
 
 export class LocalStore {
   constructor(storage = globalThis.localStorage) {
@@ -9,12 +10,20 @@ export class LocalStore {
   read() {
     try {
       const saved = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? '{"paychecks":[]}');
-      if (!Array.isArray(saved.paychecks)) return { version: 2, paychecks: [] };
-      if (saved.version === 2) return saved;
+      if (!Array.isArray(saved.paychecks)) return { version: STORAGE_VERSION, paychecks: [] };
+      if (saved.version === STORAGE_VERSION) return saved;
       const migrated = {
-        version: 2,
+        version: STORAGE_VERSION,
         paychecks: saved.paychecks.map((old) => {
-          const paycheck = { ...old, entries: Array.isArray(old.entries) ? old.entries : [] };
+          const entries = Array.isArray(old.entries) ? old.entries.map((entry) => {
+            const savedEntry = { ...entry };
+            // Before category overrides existed, descriptions were sometimes stored only in `category`.
+            if (!String(savedEntry.note ?? '').trim() && String(savedEntry.category ?? '').trim()) {
+              savedEntry.note = String(savedEntry.category).trim();
+            }
+            return savedEntry;
+          }) : [];
+          const paycheck = { ...old, entries };
           if (Number.isInteger(paycheck.grossMinor)) {
             paycheck.payMinor = Math.max(0, paycheck.grossMinor - (paycheck.taxWithheldMinor ?? 0));
           }
@@ -27,7 +36,7 @@ export class LocalStore {
       catch { /* Keep showing migrated records if the browser refuses the rewrite. */ }
       return migrated;
     } catch {
-      return { version: 2, paychecks: [] };
+      return { version: STORAGE_VERSION, paychecks: [] };
     }
   }
 
@@ -53,7 +62,7 @@ export class LocalStore {
       data.paychecks.push({ ...values, id: Math.max(0, ...data.paychecks.map((item) => item.id)) + 1,
         entries: [], createdAt: now, updatedAt: now });
     }
-    data.version = 2;
+    data.version = STORAGE_VERSION;
     this.write(data);
     return values.id ? Number(values.id) : data.paychecks.at(-1).id;
   }
@@ -68,6 +77,7 @@ export class LocalStore {
     const data = this.read();
     const paycheck = data.paychecks.find((item) => item.id === Number(paycheckId));
     if (!paycheck) throw new Error('Paycheck not found.');
+    data.version = STORAGE_VERSION;
     const now = new Date().toISOString();
     if (values.id) {
       const index = paycheck.entries.findIndex((item) => item.id === Number(values.id));

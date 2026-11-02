@@ -99,3 +99,19 @@ test('keeps a legacy expense description when drag reassignment changes its old 
   assert.equal(saved.category, 'utilities');
   assert.equal(entryDescription(saved), 'اشتراك المولدة');
 });
+
+test('migrates old entries so legacy descriptions are separate before any category change', () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, paychecks: [{
+    id: 13, label: 'Old pay', payDate: '2026-02-01', currencyCode: 'IQD', fractionDigits: 3, payMinor: 100000,
+    entries: [{ id: 5, kind: 'expense', category: 'اشتراك المولدة', note: '', amountMinor: 50000, occurredAt: '2026-02-02' }],
+  }] }));
+  const store = new LocalStore(storage);
+  const entry = store.listEntries(13)[0];
+  assert.equal(entry.note, 'اشتراك المولدة');
+  store.saveEntry(13, categoryOverridePatch(entry, 'utilities'));
+  const saved = store.listEntries(13)[0];
+  assert.equal(saved.category, 'utilities');
+  assert.equal(entryDescription(saved), 'اشتراك المولدة');
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 3);
+});
