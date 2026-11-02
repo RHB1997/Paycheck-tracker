@@ -9,13 +9,32 @@ export class LocalStore {
   read() {
     try {
       const saved = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? '{"paychecks":[]}');
-      return Array.isArray(saved.paychecks) ? saved : { paychecks: [] };
+      if (!Array.isArray(saved.paychecks)) return { version: 2, paychecks: [] };
+      if (saved.version === 2) return saved;
+      const migrated = {
+        version: 2,
+        paychecks: saved.paychecks.map((old) => {
+          const paycheck = { ...old, entries: Array.isArray(old.entries) ? old.entries : [] };
+          if (Number.isInteger(paycheck.grossMinor)) {
+            paycheck.payMinor = Math.max(0, paycheck.grossMinor - (paycheck.taxWithheldMinor ?? 0));
+          }
+          delete paycheck.grossMinor;
+          delete paycheck.taxWithheldMinor;
+          return paycheck;
+        }),
+      };
+      try { this.write(migrated); }
+      catch { /* Keep showing migrated records if the browser refuses the rewrite. */ }
+      return migrated;
     } catch {
-      return { paychecks: [] };
+      return { version: 2, paychecks: [] };
     }
   }
 
-  write(data) { this.storage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  write(data) {
+    try { this.storage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+    catch (error) { error.code = 'storageError'; throw error; }
+  }
   listPaychecks() { return [...this.read().paychecks].sort((a, b) => b.payDate.localeCompare(a.payDate) || b.id - a.id); }
   getPaycheck(id) { return this.read().paychecks.find((item) => item.id === Number(id)) ?? null; }
   listEntries(paycheckId) {
@@ -34,6 +53,7 @@ export class LocalStore {
       data.paychecks.push({ ...values, id: Math.max(0, ...data.paychecks.map((item) => item.id)) + 1,
         entries: [], createdAt: now, updatedAt: now });
     }
+    data.version = 2;
     this.write(data);
     return values.id ? Number(values.id) : data.paychecks.at(-1).id;
   }

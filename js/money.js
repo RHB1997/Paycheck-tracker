@@ -1,37 +1,49 @@
 export function parseAmountToMinorUnits(value, fractionDigits = 2) {
-  const entered = String(value).trim();
+  const entered = String(value).trim()
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/٫/g, '.')
+    .replace(/٬/g, ',');
   if (!Number.isInteger(fractionDigits) || fractionDigits < 0 || fractionDigits > 3) {
-    throw new RangeError('Decimal places must be between 0 and 3.');
+    const error = new RangeError('Decimal places must be between 0 and 3.');
+    error.code = 'invalidAmount';
+    throw error;
   }
   const pattern = /^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.(\d+))?$/;
   const match = entered.match(pattern);
   if (!match || (match[1] && (match[1].length > fractionDigits || (fractionDigits === 0 && /[1-9]/.test(match[1]))))) {
-    throw new TypeError('Enter a valid amount.');
+    const error = new TypeError('Enter a valid amount.');
+    error.code = 'invalidAmount';
+    throw error;
   }
   const text = entered.replace(/,/g, '');
   const [whole, fraction = ''] = text.split('.');
   const scale = 10 ** fractionDigits;
   const minor = Number(whole) * scale + Number((fraction + '0'.repeat(fractionDigits)).slice(0, fractionDigits) || 0);
-  if (!Number.isSafeInteger(minor)) throw new RangeError('Amount is too large.');
+  if (!Number.isSafeInteger(minor)) {
+    const error = new RangeError('Amount is too large.');
+    error.code = 'amountTooLarge';
+    throw error;
+  }
   return minor;
 }
 
-export function formatMoney(minor, currencyCode = 'USD', fractionDigits = 2) {
-  return new Intl.NumberFormat(undefined, {
+export function formatMoney(minor, currencyCode = 'USD', fractionDigits = 2, locale = 'en-US') {
+  return new Intl.NumberFormat(locale, {
     style: 'currency', currency: currencyCode,
     minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits,
   }).format(minor / (10 ** fractionDigits));
 }
 
-export function formatDate(date) {
-  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-    .format(new Date(`${date}T12:00:00`));
+export function formatDate(date, locale = 'en-US') {
+  const value = String(date);
+  const parsed = value.length === 10 ? new Date(`${value}T12:00:00Z`) : new Date(value);
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric' }).format(parsed);
 }
 
 export function summarize(paycheck, entries = []) {
   const expensesMinor = entries.filter((item) => item.kind === 'expense').reduce((sum, item) => sum + item.amountMinor, 0);
   const savingsMinor = entries.filter((item) => item.kind === 'saving').reduce((sum, item) => sum + item.amountMinor, 0);
-  const netMinor = paycheck.grossMinor - paycheck.taxWithheldMinor;
-  return { grossMinor: paycheck.grossMinor, taxWithheldMinor: paycheck.taxWithheldMinor, netMinor,
-    expensesMinor, savingsMinor, remainingMinor: netMinor - expensesMinor - savingsMinor };
+  return { payMinor: paycheck.payMinor, expensesMinor, savingsMinor,
+    remainingMinor: paycheck.payMinor - expensesMinor - savingsMinor };
 }

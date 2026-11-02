@@ -1,0 +1,63 @@
+const MESSAGES = {
+  en: {
+    workspace: 'Workspace', overview: 'Overview', yourMoney: 'YOUR MONEY', paychecksNav: 'Paychecks',
+    privacyTitle: 'Your data stays yours', privacyBody: 'Saved only in this browser.', localStorage: 'Local storage', yourAccount: 'Your account',
+    yourFinances: 'YOUR FINANCES', heading: 'Your money, in perspective.', headingCopy: 'A clear view of every paycheck and where it goes.', addPaycheck: 'Add paycheck',
+    paycheck: 'Paycheck', expenses: 'Expenses', saved: 'Saved', remaining: 'Remaining', selectPaycheck: 'Select a paycheck to see your summary', fromSelected: 'From your selected paycheck',
+    incomeEyebrow: 'YOUR INCOME', paychecksTitle: 'Paychecks', addNew: '＋ Add new', detailsEyebrow: 'THE DETAILS', recentActivity: 'Recent activity', addEntry: '＋ Add entry',
+    footerKind: 'Made for a little more peace of mind.', footerPrivacy: 'Your financial data stays in this browser.', rateNote: 'Exchange rates update daily. Each record keeps the rate used when it was saved.',
+    rateAttribution: 'Exchange rates by Frankfurter', incomeDetails: 'INCOME DETAILS', addPaycheckTitle: 'Add a paycheck', editPaycheckTitle: 'Edit paycheck', close: 'Close',
+    currencyLock: 'Currency and decimal places stay fixed after the first entry.', descriptionRequired: 'Describe this entry so it can be categorized.', amountTooLarge: 'That amount is too large.',
+    paycheckName: 'Paycheck name', optional: 'Optional', paycheckNameHint: 'e.g. Monthly salary', payDate: 'Pay date', currency: 'Currency code', decimalPlaces: 'Currency decimal places',
+    decimal0: '0 — whole units', decimal1: '1 decimal place', decimal2: '2 decimal places', decimal3: '3 decimal places', payAmount: 'Pay received',
+    savePaycheck: 'Save paycheck', cancel: 'Cancel', activityEyebrow: 'PAYCHECK ACTIVITY', addEntryTitle: 'Add an entry', editEntryTitle: 'Edit entry', type: 'Type', expense: 'Expense',
+    savingsContribution: 'Savings contribution', description: 'What was this for?', descriptionHint: 'e.g. groceries, rent, electricity', categorySuggested: 'Automatically grouped under',
+    amount: 'Amount', saveEntry: 'Save entry', confirm: 'PLEASE CONFIRM', deleteItem: 'Delete this item?', deletePaycheck: 'Delete this paycheck?',
+    deleteEntry: 'Delete this entry?', deletePaycheckCopy: 'This also removes its expense and savings entries from this browser.', deleteEntryCopy: 'This entry will be removed from the selected paycheck.', delete: 'Delete',
+    noPaychecksTitle: 'Start with a paycheck', noPaychecksBody: 'Add the amount you received to get started.', activityEmptyTitle: 'Your activity will show up here',
+    activityEmptyBody: 'Add a paycheck, then record expenses and savings.', noActivityTitle: 'No activity just yet', noActivityBody: 'Add expenses and savings as you go.',
+    paycheckActivity: 'Paycheck activity', takeHome: 'pay received', saving: 'savings', entry: 'entry', entries: 'entries', grossPay: 'pay amount',
+    usdUnavailable: 'USD equivalent unavailable', usdApprox: '≈ {amount} · rate as of {date}', usdDirect: '{amount}', rateLoading: 'Getting latest USD rate…', rateError: 'Could not save: {message}',
+    invalidCurrency: 'Enter a 3-letter currency code.', invalidAmount: 'Enter a valid amount.', invalidRate: 'A USD exchange rate is unavailable for {code}.',
+    rateNetworkError: 'Could not load the exchange rate. Check your internet connection and try again.', rateHttpError: 'Could not load the exchange rate. Try again later.',
+    ratePrecisionError: 'The exchange rate response did not include an update time.', storageError: 'Could not save data in this browser. Check that browser storage is enabled.',
+    edit: 'Edit', menuDelete: 'Delete', savingBadge: 'SAVINGS',
+    'category.housing': 'Housing', 'category.food': 'Food & dining', 'category.transport': 'Transport', 'category.utilities': 'Bills & utilities',
+    'category.health': 'Health', 'category.shopping': 'Shopping', 'category.subscriptions': 'Subscriptions', 'category.education': 'Education',
+    'category.travel': 'Travel', 'category.savings': 'Savings', 'category.other': 'Other',
+  },
+  ar: {
+    workspace: 'مساحة العمل', overview: 'نظرة عامة', yourMoney: 'أموالك', paychecksNav: 'الرواتب',
+    privacyTitle: 'بياناتك ملكك', privacyBody: 'تُحفظ في هذا المتصفح فقط.', localStorage: 'تخزين محلي', yourAccount: 'حسابك',
+    yourFinances: 'أموالك', heading: 'أموالك، بصورة أوضح.', headingCopy: 'تابع كل راتب واعرف أين يذهب.', addPaycheck: 'إضافة راتب',
+    paycheck: 'الراتب', expenses: 'المصروفات', saved: 'المدخرات', remaining: 'المتبقي', selectPaycheck: 'اختر راتباً لعرض ملخصه', fromSelected: 'من الراتب المحدد',
+    incomeEyebrow: 'الدخل', paychecksTitle: 'الرواتب', addNew: '＋ إضافة', detailsEyebrow: 'التفاصيل', recentActivity: 'النشاط الأخير', addEntry: '＋ إضافة حركة',
+    footerKind: 'لراحة بال أكثر بقليل.', footerPrivacy: 'تبقى بياناتك المالية في هذا المتصفح.', rateNote: 'تُحدّث أسعار الصرف يومياً، ويُحفظ السعر المستخدم مع كل حركة.',
+    rateAttribution: 'أسعار الصرف من Frankfurter', incomeDetails: 'تفاصيل الدخل', addPaycheckTitle: 'إضافة راتب', editPaycheckTitle: 'تعديل الراتب', close: 'إغلاق',
+    currencyLock: 'تظل العملة ومنازلها العشرية ثابتة بعد تسجيل أول حركة.', descriptionRequired: 'اكتب وصفاً لهذه الحركة ليتم تصنيفها تلقائياً.', amountTooLarge: 'المبلغ كبير جداً.',
+    paycheckName: 'اسم الراتب', optional: 'اختياري', paycheckNameHint: 'مثال: الراتب الشهري', payDate: 'تاريخ الاستلام', currency: 'رمز العملة', decimalPlaces: 'المنازل العشرية للعملة',
+    decimal0: '٠ — أعداد صحيحة', decimal1: 'منزلة عشرية واحدة', decimal2: 'منزلتان عشريتان', decimal3: 'ثلاث منازل عشرية', payAmount: 'المبلغ المستلم',
+    savePaycheck: 'حفظ الراتب', cancel: 'إلغاء', activityEyebrow: 'حركات الراتب', addEntryTitle: 'إضافة حركة', editEntryTitle: 'تعديل الحركة', type: 'النوع', expense: 'مصروف',
+    savingsContribution: 'إيداع في المدخرات', description: 'ما الغرض من هذه الحركة؟', descriptionHint: 'مثال: مشتريات، إيجار، كهرباء', categorySuggested: 'سيُصنّف تلقائياً ضمن',
+    amount: 'المبلغ', saveEntry: 'حفظ الحركة', confirm: 'تأكيد', deleteItem: 'حذف هذا العنصر؟', deletePaycheck: 'حذف هذا الراتب؟',
+    deleteEntry: 'حذف هذه الحركة؟', deletePaycheckCopy: 'سيؤدي ذلك أيضاً إلى حذف المصروفات والمدخرات المرتبطة بهذا الراتب من هذا المتصفح.', deleteEntryCopy: 'ستُحذف هذه الحركة من الراتب المحدد.', delete: 'حذف',
+    noPaychecksTitle: 'ابدأ بإضافة راتب', noPaychecksBody: 'أدخل المبلغ الذي استلمته للبدء.', activityEmptyTitle: 'ستظهر حركاتك هنا',
+    activityEmptyBody: 'أضف راتباً، ثم سجّل مصروفاتك ومدخراتك.', noActivityTitle: 'لا توجد حركات بعد', noActivityBody: 'أضف مصروفاتك ومدخراتك عند حدوثها.',
+    paycheckActivity: 'حركات الراتب', takeHome: 'المبلغ المستلم', saving: 'مدخرات', entry: 'حركة', entries: 'حركات', grossPay: 'المبلغ المستلم',
+    usdUnavailable: 'لا يتوفر مقابل بالدولار', usdApprox: '≈ {amount} · سعر بتاريخ {date}', usdDirect: '{amount}', rateLoading: 'جارٍ جلب أحدث سعر للدولار…', rateError: 'تعذر الحفظ: {message}',
+    invalidCurrency: 'أدخل رمز عملة من ثلاثة أحرف.', invalidAmount: 'أدخل مبلغاً صحيحاً.', invalidRate: 'لا يتوفر سعر صرف إلى الدولار للعملة {code}.',
+    rateNetworkError: 'تعذر جلب سعر الصرف. تحقق من اتصالك بالإنترنت وحاول مجدداً.', rateHttpError: 'تعذر جلب سعر الصرف. حاول مجدداً لاحقاً.',
+    ratePrecisionError: 'لم يتضمن رد سعر الصرف وقت التحديث.', storageError: 'تعذر حفظ البيانات في هذا المتصفح. تحقق من تفعيل التخزين.',
+    edit: 'تعديل', menuDelete: 'حذف', savingBadge: 'مدخرات',
+    'category.housing': 'السكن', 'category.food': 'الطعام والمطاعم', 'category.transport': 'المواصلات', 'category.utilities': 'الفواتير والخدمات',
+    'category.health': 'الصحة', 'category.shopping': 'التسوق', 'category.subscriptions': 'الاشتراكات', 'category.education': 'التعليم',
+    'category.travel': 'السفر', 'category.savings': 'المدخرات', 'category.other': 'أخرى',
+  },
+};
+
+export function translate(language, key, values = {}) {
+  const template = MESSAGES[language]?.[key] ?? MESSAGES.en[key] ?? key;
+  return template.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ''));
+}
+
+export function getLanguageMessages(language) { return MESSAGES[language] ?? MESSAGES.en; }

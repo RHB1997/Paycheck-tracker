@@ -1,12 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f5f6f2">
-    <meta name="description" content="A private, local-first paycheck and spending tracker.">
+    <meta name="description" content="Track paychecks, expenses, and savings privately in your browser. English and Arabic supported.">
     <title>Paycheck — money, in perspective</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="rtl.css">
     <script type="module" src="js/app.js"></script>
   </head>
   <body>
@@ -16,19 +17,19 @@
           <span class="brand-mark" aria-hidden="true">p</span>
           <span>paycheck<span class="brand-period">.</span></span>
         </a>
-        <div class="workspace-label">YOUR MONEY</div>
-        <nav aria-label="Main navigation">
+        <div class="workspace-label" data-i18n="yourMoney">YOUR MONEY</div>
+        <nav aria-label="Main navigation" data-i18n-aria-label="yourMoney">
           <a class="nav-link active" href="#overview" aria-current="page">
-            <span class="nav-icon" aria-hidden="true">◫</span> Overview
+            <span class="nav-icon" aria-hidden="true">◫</span><span data-i18n="overview">Overview</span>
           </a>
           <a class="nav-link" href="#paychecks">
-            <span class="nav-icon" aria-hidden="true">▤</span> Paychecks
+            <span class="nav-icon" aria-hidden="true">▤</span><span data-i18n="paychecksNav">Paychecks</span>
           </a>
         </nav>
         <div class="sidebar-bottom">
           <div class="privacy-card">
             <span class="privacy-icon" aria-hidden="true">◈</span>
-            <div><strong>Your data stays yours</strong><p>Saved only in this browser.</p></div>
+            <div><strong data-i18n="privacyTitle">Your data stays yours</strong><p data-i18n="privacyBody">Saved only in this browser.</p></div>
           </div>
           <span class="version-label">PAYCHECK TRACKER · 1.0</span>
         </div>
@@ -36,67 +37,68 @@
 
       <main id="overview" class="main-content">
         <header class="topbar">
-          <div class="breadcrumb"><span>Workspace</span><span class="crumb-divider">/</span><strong>Overview</strong></div>
-          <div class="topbar-right"><span class="local-indicator"><i></i> Local storage</span><span class="avatar" aria-label="Your account">Y</span></div>
+          <div class="breadcrumb"><span data-i18n="workspace">Workspace</span><span class="crumb-divider">/</span><strong data-i18n="overview">Overview</strong></div>
+          <div class="topbar-right"><span class="local-indicator"><i></i><span data-i18n="localStorage">Local storage</span></span><button class="language-toggle" id="language-toggle" type="button" aria-label="العربية">العربية</button><span class="avatar" data-i18n-aria-label="yourAccount" aria-label="Your account">Y</span></div>
         </header>
 
         <section class="page-heading">
-          <div><p class="eyebrow" id="today-label">YOUR FINANCES</p><h1>Your money,<br class="mobile-break"> in perspective.</h1><p class="heading-copy">A clear view of every paycheck and where it goes.</p></div>
-          <button class="button button-primary" id="add-paycheck"><span aria-hidden="true">＋</span> Add paycheck</button>
+          <div><p class="eyebrow" id="today-label" data-i18n="yourFinances">YOUR FINANCES</p><h1 data-i18n="heading">Your money, in perspective.</h1><p class="heading-copy" data-i18n="headingCopy">A clear view of every paycheck and where it goes.</p></div>
+          <button class="button button-primary" id="add-paycheck"><span aria-hidden="true">＋</span><span data-i18n="addPaycheck">Add paycheck</span></button>
         </section>
 
-        <section class="summary-grid" aria-label="Selected paycheck summary">
+        <section class="summary-grid" aria-label="Selected paycheck summary" data-i18n-aria-label="paycheck">
           <article class="summary-card summary-card-dark">
-            <div class="summary-top"><span>Take-home pay</span><span class="summary-icon" aria-hidden="true">↗</span></div>
-            <p class="summary-value" id="net-total">—</p><p class="summary-note" id="net-note">Select a paycheck to see your summary</p>
+            <div class="summary-top"><span data-i18n="paycheck">Paycheck</span><span class="summary-icon" aria-hidden="true">↗</span></div>
+            <p class="summary-value" id="pay-total">—</p><p class="summary-fx" id="pay-usd"></p><p class="summary-note" id="pay-note" data-i18n="selectPaycheck">Select a paycheck to see your summary</p>
             <div class="net-track"><span id="net-track-fill"></span></div>
           </article>
-          <article class="summary-card"><div class="summary-top"><span>Tax withheld</span><span class="summary-icon icon-soft-orange" aria-hidden="true">⌁</span></div><p class="summary-value" id="tax-total">—</p><p class="summary-note" id="tax-note">From your selected paycheck</p></article>
-          <article class="summary-card"><div class="summary-top"><span>Expenses</span><span class="summary-icon icon-soft-blue" aria-hidden="true">↘</span></div><p class="summary-value" id="expenses-total">—</p><p class="summary-note" id="expenses-note">From your selected paycheck</p></article>
-          <article class="summary-card"><div class="summary-top"><span>Saved</span><span class="summary-icon icon-soft-green" aria-hidden="true">⌖</span></div><p class="summary-value" id="savings-total">—</p><p class="summary-note" id="savings-note">From your selected paycheck</p></article>
+          <article class="summary-card"><div class="summary-top"><span data-i18n="expenses">Expenses</span><span class="summary-icon icon-soft-orange" aria-hidden="true">↘</span></div><p class="summary-value" id="expenses-total">—</p><p class="summary-fx" id="expenses-usd"></p><p class="summary-note" id="expenses-note" data-i18n="fromSelected">From your selected paycheck</p></article>
+          <article class="summary-card"><div class="summary-top"><span data-i18n="saved">Saved</span><span class="summary-icon icon-soft-blue" aria-hidden="true">⌖</span></div><p class="summary-value" id="savings-total">—</p><p class="summary-fx" id="savings-usd"></p><p class="summary-note" id="savings-note" data-i18n="fromSelected">From your selected paycheck</p></article>
+          <article class="summary-card"><div class="summary-top"><span data-i18n="remaining">Remaining</span><span class="summary-icon icon-soft-green" aria-hidden="true">◌</span></div><p class="summary-value" id="remaining-total">—</p><p class="summary-fx" id="remaining-usd"></p><p class="summary-note" id="remaining-note" data-i18n="fromSelected">From your selected paycheck</p></article>
         </section>
 
         <section class="content-grid">
           <article class="panel paycheck-panel" id="paychecks">
-            <div class="panel-heading"><div><p class="eyebrow">YOUR INCOME</p><h2>Paychecks</h2></div><button class="text-button" id="add-paycheck-inline">＋ Add new</button></div>
+            <div class="panel-heading"><div><p class="eyebrow" data-i18n="incomeEyebrow">YOUR INCOME</p><h2 data-i18n="paychecksTitle">Paychecks</h2></div><button class="text-button" id="add-paycheck-inline" data-i18n="addNew">＋ Add new</button></div>
             <div id="paycheck-list" class="paycheck-list"></div>
           </article>
           <article class="panel activity-panel">
-            <div class="panel-heading"><div><p class="eyebrow">THE DETAILS</p><h2 id="activity-title">Recent activity</h2></div><button class="text-button" id="add-entry" disabled>＋ Add entry</button></div>
+            <div class="panel-heading"><div><p class="eyebrow" data-i18n="detailsEyebrow">THE DETAILS</p><h2 id="activity-title" data-i18n="recentActivity">Recent activity</h2></div><button class="text-button" id="add-entry" disabled data-i18n="addEntry">＋ Add entry</button></div>
             <div id="activity-list" class="activity-list"></div>
           </article>
         </section>
 
-        <footer class="page-footer"><span>Made for a little more peace of mind.</span><span><i class="footer-dot"></i> Your financial data never leaves this browser.</span></footer>
+        <footer class="page-footer"><span data-i18n="footerKind">Made for a little more peace of mind.</span><span><i class="footer-dot"></i><span data-i18n="footerPrivacy">Your financial data stays in this browser.</span></span><span class="rate-note" data-i18n="rateNote">Exchange rates update daily. Each record keeps the rate used when it was saved.</span><a class="rate-attribution" href="https://frankfurter.dev" target="_blank" rel="noopener noreferrer" data-i18n="rateAttribution">Exchange rates by Frankfurter</a></footer>
       </main>
     </div>
 
     <dialog id="paycheck-dialog" class="form-dialog">
       <form id="paycheck-form" method="dialog">
-        <div class="dialog-heading"><div><p class="eyebrow">INCOME DETAILS</p><h2 id="paycheck-dialog-title">Add a paycheck</h2></div><button class="icon-button" type="button" data-close="paycheck-dialog" aria-label="Close">×</button></div>
-        <label>Paycheck name <span class="optional">Optional</span><input name="label" maxlength="80" placeholder="e.g. Monthly salary"></label>
-        <div class="form-row"><label>Pay date<input name="payDate" type="date" required></label><label>Currency<input name="currencyCode" value="USD" maxlength="3" required autocomplete="off"></label></div>
-        <label>Decimal places<select name="fractionDigits"><option value="0">0 — whole units</option><option value="1">1 decimal place</option><option value="2" selected>2 decimal places</option><option value="3">3 decimal places</option></select></label>
-        <div class="form-row"><label>Gross pay<input name="gross" inputmode="decimal" placeholder="0.00" required></label><label>Tax withheld<input name="tax" inputmode="decimal" placeholder="0.00" value="0" required></label></div>
+        <div class="dialog-heading"><div><p class="eyebrow" data-i18n="incomeDetails">INCOME DETAILS</p><h2 id="paycheck-dialog-title" data-i18n="addPaycheckTitle">Add a paycheck</h2></div><button class="icon-button" type="button" data-close="paycheck-dialog" data-i18n-aria-label="close" aria-label="Close">×</button></div>
+        <label><span data-i18n="paycheckName">Paycheck name</span> <span class="optional" data-i18n="optional">Optional</span><input name="label" maxlength="80" data-i18n-placeholder="paycheckNameHint" placeholder="e.g. Monthly salary"></label>
+        <div class="form-row"><label><span data-i18n="payDate">Pay date</span><input name="payDate" type="date" required></label><label><span data-i18n="currency">Currency code</span><input name="currencyCode" value="USD" maxlength="3" required autocomplete="off"></label></div>
+        <label><span data-i18n="decimalPlaces">Currency decimal places</span><select name="fractionDigits"><option value="0" data-i18n="decimal0">0 — whole units</option><option value="1" data-i18n="decimal1">1 decimal place</option><option value="2" selected data-i18n="decimal2">2 decimal places</option><option value="3" data-i18n="decimal3">3 decimal places</option></select></label>
+        <p class="form-hint" id="currency-lock-hint" hidden></p>
+        <label><span data-i18n="payAmount">Pay received</span><input name="pay" inputmode="decimal" placeholder="0.00" required></label>
         <p class="form-error" id="paycheck-error" role="alert"></p>
-        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="paycheck-dialog">Cancel</button><button class="button button-primary" type="submit">Save paycheck</button></div>
+        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="paycheck-dialog" data-i18n="cancel">Cancel</button><button class="button button-primary" type="submit" data-i18n="savePaycheck">Save paycheck</button></div>
       </form>
     </dialog>
 
     <dialog id="entry-dialog" class="form-dialog">
       <form id="entry-form" method="dialog">
-        <div class="dialog-heading"><div><p class="eyebrow">PAYCHECK ACTIVITY</p><h2 id="entry-dialog-title">Add an entry</h2></div><button class="icon-button" type="button" data-close="entry-dialog" aria-label="Close">×</button></div>
-        <label>Type<select name="kind"><option value="expense">Expense</option><option value="saving">Savings contribution</option></select></label>
-        <label>Category<input name="category" maxlength="50" placeholder="Rent, groceries, emergency fund" required></label>
-        <label>Note <span class="optional">Optional</span><input name="note" maxlength="240" placeholder="Add a short note"></label>
-        <label>Amount <span id="entry-currency-label"></span><input name="amount" inputmode="decimal" placeholder="0.00" required></label>
+        <div class="dialog-heading"><div><p class="eyebrow" data-i18n="activityEyebrow">PAYCHECK ACTIVITY</p><h2 id="entry-dialog-title" data-i18n="addEntryTitle">Add an entry</h2></div><button class="icon-button" type="button" data-close="entry-dialog" data-i18n-aria-label="close" aria-label="Close">×</button></div>
+        <label><span data-i18n="type">Type</span><select name="kind"><option value="expense" data-i18n="expense">Expense</option><option value="saving" data-i18n="savingsContribution">Savings contribution</option></select></label>
+        <label><span data-i18n="description">What was this for?</span><input name="note" maxlength="240" data-i18n-placeholder="descriptionHint" placeholder="e.g. groceries, rent, electricity" required></label>
+        <p class="category-preview"><span data-i18n="categorySuggested">Automatically grouped under</span> <strong id="category-preview">Other</strong></p>
+        <label><span data-i18n="amount">Amount</span> <span id="entry-currency-label"></span><input name="amount" inputmode="decimal" placeholder="0.00" required></label>
         <p class="form-error" id="entry-error" role="alert"></p>
-        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="entry-dialog">Cancel</button><button class="button button-primary" type="submit">Save entry</button></div>
+        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="entry-dialog" data-i18n="cancel">Cancel</button><button class="button button-primary" type="submit" data-i18n="saveEntry">Save entry</button></div>
       </form>
     </dialog>
 
     <dialog id="confirm-dialog" class="form-dialog confirm-dialog">
-      <form method="dialog"><div class="dialog-heading"><div><p class="eyebrow">PLEASE CONFIRM</p><h2 id="confirm-title">Delete this item?</h2></div><button class="icon-button" type="button" data-close="confirm-dialog" aria-label="Close">×</button></div><p class="confirm-copy" id="confirm-copy"></p><div class="dialog-actions"><button class="button button-secondary" value="cancel">Cancel</button><button class="button button-danger" id="confirm-delete" value="confirm">Delete</button></div></form>
+      <form method="dialog"><div class="dialog-heading"><div><p class="eyebrow" data-i18n="confirm">PLEASE CONFIRM</p><h2 id="confirm-title" data-i18n="deleteItem">Delete this item?</h2></div><button class="icon-button" type="button" data-close="confirm-dialog" data-i18n-aria-label="close" aria-label="Close">×</button></div><p class="confirm-copy" id="confirm-copy"></p><div class="dialog-actions"><button class="button button-secondary" value="cancel" data-i18n="cancel">Cancel</button><button class="button button-danger" id="confirm-delete" value="confirm" data-i18n="delete">Delete</button></div></form>
     </dialog>
   </body>
 </html>

@@ -47,7 +47,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir _site
-          cp index.html styles.css _site/
+          cp index.html styles.css rtl.css _site/
           cp -r js _site/js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

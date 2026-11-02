@@ -1,0 +1,15 @@
+.language-toggle{border:1px solid #e2e8e2;border-radius:7px;background:#fff;color:var(--green);font:600 11px "DM Sans",sans-serif;padding:7px 10px;cursor:pointer}
+.summary-fx,.fx-equivalent{font-size:9px;color:#799184;margin:0 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-card-dark .summary-fx{color:#d8e9e0}
+.paycheck-amount{text-align:start}
+.category-preview{background:#f3f7f3;border-radius:7px;padding:10px 12px;margin:-4px 0 14px;color:#738078;font-size:10px}
+.category-preview strong{color:var(--green);margin-inline-start:4px}
+.form-hint{margin:-5px 0 12px;color:#87928b;font-size:10px}
+.rate-note{flex:1}
+html[dir="rtl"] .sidebar{left:auto;right:0;border-right:0;border-left:1px solid var(--line)}
+html[dir="rtl"] .main-content{margin-left:0;margin-right:248px}
+html[dir="rtl"] .row-menu{right:auto;left:0}
+html[dir="rtl"] .row-menu button{text-align:right}
+html[dir="rtl"] .form-dialog input[type="date"]{direction:ltr;text-align:right}
+html[dir="rtl"] .page-heading h1,html[dir="rtl"] .summary-value{letter-spacing:0}
+@media(max-width:650px){html[dir="rtl"] .sidebar{border-left:0}html[dir="rtl"] .main-content{margin-right:0}}

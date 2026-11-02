@@ -12,10 +12,10 @@ function setup() { return new LocalStore(new MemoryStorage()); }
 
 test('creates and sorts paychecks, and updates without losing entries', () => {
   const store = setup();
-  const older = store.savePaycheck({ label: 'June', payDate: '2026-06-01', currencyCode: 'USD', fractionDigits: 2, grossMinor: 400000, taxWithheldMinor: 50000 });
-  const newer = store.savePaycheck({ label: 'July', payDate: '2026-07-01', currencyCode: 'USD', fractionDigits: 2, grossMinor: 420000, taxWithheldMinor: 50000 });
+  const older = store.savePaycheck({ label: 'June', payDate: '2026-06-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 350000, usdMinor: 350000 });
+  const newer = store.savePaycheck({ label: 'July', payDate: '2026-07-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 420000, usdMinor: 420000 });
   store.saveEntry(older, { kind: 'expense', category: 'Rent', note: '', amountMinor: 100000 });
-  store.savePaycheck({ id: older, label: 'June salary', payDate: '2026-06-01', currencyCode: 'USD', fractionDigits: 2, grossMinor: 400000, taxWithheldMinor: 50000 });
+  store.savePaycheck({ id: older, label: 'June salary', payDate: '2026-06-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 350000, usdMinor: 350000 });
   assert.deepEqual(store.listPaychecks().map((item) => item.id), [newer, older]);
   assert.equal(store.getPaycheck(older).label, 'June salary');
   assert.equal(store.listEntries(older).length, 1);
@@ -23,14 +23,14 @@ test('creates and sorts paychecks, and updates without losing entries', () => {
 
 test('updates and deletes entries and cascades paycheck deletion locally', () => {
   const store = setup();
-  const paycheckId = store.savePaycheck({ label: '', payDate: '2026-01-01', currencyCode: 'USD', fractionDigits: 2, grossMinor: 100000, taxWithheldMinor: 0 });
-  store.saveEntry(paycheckId, { kind: 'expense', category: 'Food', note: '', amountMinor: 2000 });
+  const paycheckId = store.savePaycheck({ label: '', payDate: '2026-01-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 100000, usdMinor: 100000 });
+  store.saveEntry(paycheckId, { kind: 'expense', category: 'food', note: 'groceries', amountMinor: 2000, currencyCode: 'USD', fractionDigits: 2, usdMinor: 2000, usdRate: 1 });
   const entry = store.listEntries(paycheckId)[0];
-  store.saveEntry(paycheckId, { id: entry.id, kind: 'saving', category: 'Fund', note: 'Rainy day', amountMinor: 3000 });
+  store.saveEntry(paycheckId, { id: entry.id, kind: 'saving', category: 'savings', note: 'Emergency fund', amountMinor: 3000, currencyCode: 'USD', fractionDigits: 2, usdMinor: 3000, usdRate: 1 });
   assert.equal(store.listEntries(paycheckId)[0].kind, 'saving');
   store.deleteEntry(paycheckId, entry.id);
   assert.equal(store.listEntries(paycheckId).length, 0);
-  store.saveEntry(paycheckId, { kind: 'expense', category: 'Food', note: '', amountMinor: 2000 });
+  store.saveEntry(paycheckId, { kind: 'expense', category: 'food', note: 'groceries', amountMinor: 2000, currencyCode: 'USD', fractionDigits: 2, usdMinor: 2000, usdRate: 1 });
   store.deletePaycheck(paycheckId);
   assert.equal(store.getPaycheck(paycheckId), null);
   assert.equal(store.listEntries(paycheckId).length, 0);
@@ -40,4 +40,32 @@ test('recovers from unreadable saved data without crashing', () => {
   const storage = new MemoryStorage();
   storage.setItem(STORAGE_KEY, 'not json');
   assert.deepEqual(new LocalStore(storage).listPaychecks(), []);
+});
+
+test('migrates tax-withheld records to amount received without restoring tax', () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEY, JSON.stringify({ paychecks: [{ id: 7, label: 'Old pay', payDate: '2026-02-01', currencyCode: 'USD', fractionDigits: 2, grossMinor: 500000, taxWithheldMinor: 75000, entries: [] }] }));
+  const paycheck = new LocalStore(storage).getPaycheck(7);
+  assert.equal(paycheck.payMinor, 425000);
+  assert.equal('taxWithheldMinor' in paycheck, false);
+  assert.equal('grossMinor' in paycheck, false);
+  assert.equal(Number.isSafeInteger(paycheck.usdMinor), false);
+});
+
+test('keeps migrated records readable if browser storage refuses the migration write', () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEY, JSON.stringify({ paychecks: [{ id: 9, label: 'Legacy', payDate: '2026-02-01', currencyCode: 'USD', fractionDigits: 2, grossMinor: 20000, taxWithheldMinor: 1000, entries: [] }] }));
+  storage.setItem = () => { throw new DOMException('Storage is full.', 'QuotaExceededError'); };
+  const paycheck = new LocalStore(storage).getPaycheck(9);
+  assert.equal(paycheck.payMinor, 19000);
+});
+
+test('retains recorded USD snapshots when reloading local data', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalStore(storage);
+  const paycheckId = store.savePaycheck({ label: '', payDate: '2026-01-01', currencyCode: 'IQD', fractionDigits: 3, payMinor: 1000000, usdRate: 0.00076, usdMinor: 76, usdRateAsOf: '2026-11-02T00:00:00.000Z' });
+  store.saveEntry(paycheckId, { kind: 'expense', category: 'food', note: 'groceries', amountMinor: 10000, currencyCode: 'IQD', fractionDigits: 3, usdRate: 0.00076, usdMinor: 1, usdRateAsOf: '2026-11-02T00:00:00.000Z' });
+  const loaded = new LocalStore(storage);
+  assert.equal(loaded.getPaycheck(paycheckId).usdMinor, 76);
+  assert.equal(loaded.listEntries(paycheckId)[0].usdMinor, 1);
 });

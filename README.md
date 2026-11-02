@@ -4,13 +4,13 @@
 
 **Your pay, clearly accounted for.**
 
-A calm, local-first web app for tracking paychecks, tax withheld, expenses, and savings.
+A local-first web app for tracking paychecks, expenses, savings, and USD equivalents, with English and Arabic support.
 
 </div>
 
 ## Run it locally
 
-Serve the project folder with any static file server, then open its local address in a modern browser. The app has no runtime dependencies or backend.
+Serve the project folder with any static file server, then open its local address in a modern browser. The app has no runtime dependencies or financial-data backend. For non-USD records it requests the selected currency's latest published daily reference rate from [Frankfurter](https://frankfurter.dev); only the currency code is sent. The app caches a rate locally for up to 24 hours and stores a snapshot with each new paycheck and entry. The rate source date and submission time are recorded, so later rates never revise earlier conversions. These are daily reference rates, not live trading quotes. Frankfurter describes the rates as public reference data, supports local caching, and provides the API without a key.
 
 Run the automated checks with:
 
@@ -21,9 +21,12 @@ npm test
 ## What it does
 
 - Create, edit, and delete paycheck records.
-- Record gross pay, tax withheld, currency, pay date, and currency decimal precision.
+- Record the amount received, currency, pay date, and currency decimal precision.
 - Add, edit, and delete expense and savings entries for each paycheck.
-- See net pay, tax, expenses, savings, and remaining balance update immediately.
+- See paycheck, expense, savings, and remaining balances update immediately.
+- Categorize expenses automatically from descriptions in English or Arabic.
+- Save the USD rate and equivalent with each paycheck and entry; earlier records keep their original conversions.
+- Switch between English and Arabic, including a right-to-left Arabic layout.
 - Keep records in the browser's local storage without an account or financial-data server.
 - Use a responsive layout on desktop and mobile browsers.
 
