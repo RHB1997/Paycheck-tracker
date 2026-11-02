@@ -30,3 +30,18 @@ test('normalizes Arabic diacritics and common alef variants', () => {
   assert.equal(inferCategory('مولدة'), 'utilities');
   assert.equal(inferCategory('اشتراك المولدة'), 'utilities');
 });
+
+test('uses context to resolve ambiguous merchant names and descriptions', () => {
+  assert.equal(inferCategory('Uber Eats dinner'), 'food');
+  assert.equal(inferCategory('Uber ride to work'), 'transport');
+  assert.equal(inferCategory('Amazon groceries'), 'food');
+  assert.equal(inferCategory('Amazon phone case'), 'shopping');
+  assert.equal(inferCategory('monthly generator subscription'), 'utilities');
+  assert.equal(inferCategory('Netflix monthly subscription'), 'subscriptions');
+  assert.equal(inferCategory('صيدلية ودواء'), 'health');
+  assert.equal(inferCategory('دفعت فاتورة الكهرباء'), 'utilities');
+});
+
+test('does not classify an empty description', () => {
+  assert.equal(inferCategory('   '), 'other');
+});
