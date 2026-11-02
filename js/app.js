@@ -241,21 +241,24 @@ $('#activity-list').addEventListener('click', (event) => { const button = event.
 $('#activity-list').addEventListener('pointerdown', (event) => {
   const handle = event.target.closest('[data-drag-entry]');
   if (!handle || event.button !== 0) return;
+  event.preventDefault();
   const row = handle.closest('[data-entry-row]');
-  dragState = { entryId: Number(handle.dataset.dragEntry), row, pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false, timer: null };
-  dragState.timer = setTimeout(() => {
-    if (!dragState) return;
-    dragState.dragging = true;
-    dragState.row.classList.add('is-dragging');
-    try { dragState.row.setPointerCapture(dragState.pointerId); } catch { /* Continue with document pointer events. */ }
+  const candidate = { entryId: Number(handle.dataset.dragEntry), row, handle, pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false, timer: null };
+  dragState = candidate;
+  candidate.timer = setTimeout(() => {
+    if (dragState !== candidate) return;
+    candidate.dragging = true;
+    candidate.row.classList.add('is-dragging');
+    candidate.handle.setAttribute('aria-grabbed', 'true');
+    document.body.classList.add('category-dragging');
     $('#category-drop-help').classList.add('drag-active');
     $('#category-drop-status').textContent = t('categoryDropHelp');
-  }, 420);
+  }, 300);
 });
 document.addEventListener('pointermove', (event) => {
   if (!dragState || event.pointerId !== dragState.pointerId) return;
   if (!dragState.dragging) {
-    if (Math.hypot(event.clientX - dragState.x, event.clientY - dragState.y) > 10) {
+    if (Math.hypot(event.clientX - dragState.x, event.clientY - dragState.y) > 24) {
       clearTimeout(dragState.timer);
       dragState = null;
     }
@@ -273,6 +276,8 @@ function finishCategoryDrag(event) {
     ? document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-drop-category]') : null;
   document.querySelectorAll('.category-drop-zone.is-target').forEach((zone) => zone.classList.remove('is-target'));
   current.row.classList.remove('is-dragging');
+  current.handle.removeAttribute('aria-grabbed');
+  document.body.classList.remove('category-dragging');
   $('#category-drop-help').classList.remove('drag-active');
   dragState = null;
   if (!target) return;
