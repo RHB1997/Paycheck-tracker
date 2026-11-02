@@ -103,9 +103,10 @@
     </dialog>
 
     <dialog id="categories-dialog" class="form-dialog">
-      <form id="categories-form" method="dialog">
+      <form id="categories-form">
         <div class="dialog-heading"><div><p class="eyebrow" data-i18n="categoryOverride">CATEGORIES</p><h2 data-i18n="manageCategories">Manage categories</h2></div><button class="icon-button" type="button" data-close="categories-dialog" data-i18n-aria-label="close" aria-label="Close">×</button></div>
         <label><span data-i18n="customCategoryName">New category name</span><input id="custom-category-name" maxlength="32" data-i18n-placeholder="customCategoryHint" placeholder="e.g. Pets"></label>
+        <p class="category-save-status" id="category-save-status" role="status" aria-live="polite"></p>
         <p class="form-error" id="category-error" role="alert"></p>
         <div class="dialog-actions"><button class="button button-secondary" type="button" data-close="categories-dialog" data-i18n="done">Done</button><button class="button button-primary" type="submit" data-i18n="addCategory">Add category</button></div>
         <ul id="custom-category-list" class="custom-category-list"></ul>

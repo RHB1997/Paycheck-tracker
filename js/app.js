@@ -241,15 +241,16 @@ $('#language-toggle').addEventListener('click', () => {
 $('#add-paycheck').addEventListener('click', () => openPaycheck());
 $('#add-paycheck-inline').addEventListener('click', () => openPaycheck());
 $('#add-entry').addEventListener('click', () => openEntry());
-$('#manage-categories').addEventListener('click', () => { renderCustomCategoryList(); $('#category-error').textContent = ''; $('#custom-category-name').value = ''; $('#categories-dialog').showModal(); });
+$('#manage-categories').addEventListener('click', () => { renderCustomCategoryList(); $('#category-error').textContent = ''; $('#category-save-status').textContent = ''; $('#custom-category-name').value = ''; $('#categories-dialog').showModal(); });
 $('#categories-form').addEventListener('submit', (event) => {
   event.preventDefault();
   try {
     store.saveCustomCategory($('#custom-category-name').value);
     $('#custom-category-name').value = '';
     $('#category-error').textContent = '';
+    $('#category-save-status').textContent = t('categoryAdded');
     renderCustomCategoryList(); refreshCustomCategoryOptions(); render();
-  } catch (error) { $('#category-error').textContent = translateError(error); }
+  } catch (error) { $('#category-save-status').textContent = ''; $('#category-error').textContent = translateError(error); }
 });
 $('#custom-category-list').addEventListener('click', (event) => {
   const button = event.target.closest('[data-remove-category]');
