@@ -10,7 +10,7 @@ A local-first web app for tracking paychecks, expenses, savings, and USD equival
 
 ## Run it locally
 
-Serve the project folder with any static file server, then open its local address in a modern browser. The app has no runtime dependencies or financial-data backend. For non-USD records it requests the selected currency's latest published daily reference rate from [Frankfurter](https://frankfurter.dev); only the currency code is sent. The app caches a rate locally for up to 24 hours and stores a snapshot with each new paycheck and entry. The rate source date and submission time are recorded, so later rates never revise earlier conversions. These are daily reference rates, not live trading quotes. Frankfurter describes the rates as public reference data, supports local caching, and provides the API without a key.
+Serve the project folder with any static file server, then open its local address in a modern browser. The app has no runtime dependencies or financial-data backend. For non-USD records it requests the selected currency's latest published daily reference rate from [Frankfurter](https://frankfurter.dev); only the currency code is sent. The app caches a rate locally for up to one hour and stores a snapshot with each new paycheck and entry. The rate source date and submission time are recorded, so later rates never revise earlier conversions. These are daily reference rates, not live trading quotes. Frankfurter describes the rates as public reference data, supports local caching, and provides the API without a key.
 
 Run the automated checks with:
 

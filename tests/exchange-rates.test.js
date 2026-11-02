@@ -38,7 +38,7 @@ test('refreshes a new submission after the cached provider rate expires', async 
     return { base: 'IQD', quote: 'USD', date: calls === 1 ? '2026-11-02' : '2026-11-03', rate: calls === 1 ? 0.00076 : 0.00075 };
   } });
   const oldRecord = await getUsdRateSnapshot('IQD', { storage, now: () => now, fetcher });
-  now += 24 * 60 * 60 * 1000 + 1000;
+  now += 60 * 60 * 1000 + 1000;
   const newRecord = await getUsdRateSnapshot('IQD', { storage, now: () => now, fetcher });
   assert.equal(oldRecord.usdRate, 0.00076);
   assert.equal(newRecord.usdRate, 0.00075);

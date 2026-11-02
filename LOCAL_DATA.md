@@ -33,7 +33,7 @@ Remaining pay is the amount received minus expenses and savings. Amounts use int
 
 ## Exchange rates
 
-For non-USD records the app uses Frankfurter's public daily reference-rate API. The app caches each currency rate locally for up to 24 hours, and saves the USD amount, rate, rate date, and submission timestamp with each record. Later rates never change earlier conversions. The selected currency code is sent in the request; paycheck amounts and descriptions remain in browser storage. Rates are daily reference values, not live quotes, and may lag or be revised by source providers. See [Frankfurter's license and data terms](https://frankfurter.dev/license/).
+For non-USD records the app uses Frankfurter's public daily reference-rate API. The app caches each currency rate locally for up to one hour, and saves the USD amount, rate, rate date, and submission timestamp with each record. Later rates never change earlier conversions. The selected currency code is sent in the request; paycheck amounts and descriptions remain in browser storage. Rates are daily reference values, not live quotes, and may lag or be revised by source providers. See [Frankfurter's license and data terms](https://frankfurter.dev/license/).
 
 ## Storage and privacy
 

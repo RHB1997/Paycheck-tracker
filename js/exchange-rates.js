@@ -1,6 +1,6 @@
 const CACHE_KEY = 'paycheck-tracker-rate-cache-v2';
 const ENDPOINT = 'https://api.frankfurter.dev/v2/rate/';
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_TTL_MS = 60 * 60 * 1000;
 
 function readCache(storage) {
   try { return JSON.parse(storage?.getItem(CACHE_KEY) ?? '{}'); }
