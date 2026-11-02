@@ -1,4 +1,5 @@
 import { inferCategory, CATEGORIES } from './categories.js';
+import { entryDescription } from './entries.js';
 import { getUsdRateSnapshot, convertMinorToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
 import { formatDate, formatMoney, parseAmountToMinorUnits, summarize } from './money.js';
@@ -116,7 +117,7 @@ function render() {
     const saving = item.kind === 'saving';
     const code = item.currencyCode || paycheck.currencyCode;
     const digits = item.fractionDigits ?? paycheck.fractionDigits;
-    const description = item.note || categoryName(item.category, item.note, item.kind);
+    const description = entryDescription(item) || categoryName(item.category, item.note, item.kind);
     return `<div class="activity-row"><span class="activity-symbol ${saving ? 'saving' : 'expense'}" aria-hidden="true">${saving ? '⌖' : '↘'}</span>
       <div class="activity-info"><div class="activity-name" dir="auto">${h(description)}</div><div class="activity-meta">${h(categoryName(item.category, item.note, item.kind))} · ${formatDate(item.occurredAt, locale())}</div><div class="fx-equivalent">${h(recordUsdLabel(item))}</div></div>
       <div class="activity-amount ${saving ? 'saving' : 'expense'}">${saving ? '+' : '−'}${cash(item.amountMinor, code, digits)}</div>
@@ -155,7 +156,7 @@ function openEntry(item = null) {
   const form = $('#entry-form');
   form.reset();
   form.elements.kind.value = item?.kind ?? 'expense';
-  form.elements.note.value = item?.note ?? '';
+  form.elements.note.value = item ? entryDescription(item) : '';
   form.elements.amount.value = item ? (item.amountMinor / 10 ** (item.fractionDigits ?? paycheck.fractionDigits)).toFixed(item.fractionDigits ?? paycheck.fractionDigits) : '';
   $('#entry-currency-label').textContent = `(${paycheck.currencyCode})`;
   $('#entry-dialog-title').textContent = t(item ? 'editEntryTitle' : 'addEntryTitle');
