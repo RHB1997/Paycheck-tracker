@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LocalStore, STORAGE_KEY } from '../js/storage.js';
+import { categoryOverridePatch, entryDescription } from '../js/entries.js';
 
 class MemoryStorage {
   values = new Map();
@@ -82,4 +83,19 @@ test('persists manually reassigned entry categories through reload and later edi
   loaded.saveEntry(paycheckId, { id: entry.id, amountMinor: 2500 });
   assert.equal(loaded.listEntries(paycheckId)[0].category, 'utilities');
   assert.equal(loaded.listEntries(paycheckId)[0].categorySource, 'manual');
+});
+
+test('keeps a legacy expense description when drag reassignment changes its old category field', () => {
+  const storage = new MemoryStorage();
+  const paycheckId = 12;
+  storage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, paychecks: [{
+    id: paycheckId, label: 'Test pay', payDate: '2026-01-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 100000,
+    entries: [{ id: 3, kind: 'expense', category: 'اشتراك المولدة', note: '', amountMinor: 2000, occurredAt: '2026-01-02' }],
+  }] }));
+  const store = new LocalStore(storage);
+  const legacyEntry = store.listEntries(paycheckId)[0];
+  store.saveEntry(paycheckId, categoryOverridePatch(legacyEntry, 'utilities'));
+  const saved = store.listEntries(paycheckId)[0];
+  assert.equal(saved.category, 'utilities');
+  assert.equal(entryDescription(saved), 'اشتراك المولدة');
 });

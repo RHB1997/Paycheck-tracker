@@ -1,5 +1,5 @@
 import { inferCategory, CATEGORIES, resolveEntryCategory } from './categories.js';
-import { entryDescription } from './entries.js';
+import { categoryOverridePatch, entryDescription } from './entries.js';
 import { getUsdRateSnapshot, convertMinorToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
 import { formatDate, formatMoney, parseAmountToMinorUnits, summarize } from './money.js';
@@ -284,7 +284,9 @@ function finishCategoryDrag(event) {
   const category = target.dataset.dropCategory;
   const paycheck = store.getPaycheck(selectedId);
   if (!paycheck) return;
-  store.saveEntry(paycheck.id, { id: current.entryId, category, categorySource: 'manual' });
+  const entry = store.listEntries(paycheck.id).find((item) => item.id === current.entryId);
+  if (!entry) return;
+  store.saveEntry(paycheck.id, categoryOverridePatch(entry, category));
   $('#category-drop-status').textContent = t('categoryDropDone', { category: t(`category.${category}`) });
   render();
 }
