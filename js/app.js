@@ -1,8 +1,9 @@
 import { inferCategory, CATEGORIES, resolveEntryCategory } from './categories.js';
 import { categoryOverridePatch, entryDescription } from './entries.js';
-import { getUsdRateSnapshot, convertMinorToUsdMinor } from './exchange-rates.js';
+import { createBackup, isBackupDue, parseBackup } from './backup.js';
+import { getUsdRateSnapshot, convertMinorToUsdMinor, convertRemainingToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
-import { formatDate, formatMoney, parseAmountToMinorUnits, summarize } from './money.js';
+import { formatDate, formatMoney, formatMoneyInput, parseAmountToMinorUnits, summarize } from './money.js';
 import { LocalStore } from './storage.js';
 
 const store = new LocalStore();
@@ -83,6 +84,23 @@ function sumUsd(records) {
   return records.reduce((total, record) => total + record.usdMinor, 0);
 }
 
+function setFormattedMoneyInput(input, fractionDigits) {
+  const cursor = input.selectionStart ?? input.value.length;
+  const prefix = input.value.slice(0, cursor).replace(/[٠-٩]/g, '0').replace(/[۰-۹]/g, '0');
+  const relevantBefore = (prefix.match(/[0-9.٫]/g) ?? []).length;
+  input.value = formatMoneyInput(input.value, fractionDigits);
+  if (relevantBefore === 0) { input.setSelectionRange(0, 0); return; }
+  let seen = 0;
+  let nextCursor = input.value.length;
+  for (let index = 0; index < input.value.length; index += 1) {
+    if (/[0-9.]/.test(input.value[index])) seen += 1;
+    if (seen >= relevantBefore) { nextCursor = index + 1; break; }
+  }
+  input.setSelectionRange(nextCursor, nextCursor);
+}
+
+function currencyDigits(code) { return code === 'IQD' ? 3 : 2; }
+
 function render() {
   const paychecks = store.listPaychecks();
   if (!paychecks.some((item) => item.id === selectedId)) selectedId = paychecks[0]?.id ?? null;
@@ -98,6 +116,7 @@ function render() {
   const paycheck = store.getPaycheck(selectedId);
   const entries = paycheck ? store.listEntries(paycheck.id) : [];
   const totals = paycheck ? summarize(paycheck, entries) : null;
+  $('#backup-reminder').hidden = !isBackupDue(store.read().lastBackupAt);
   $('#category-drop-help').hidden = !paycheck;
   const dropCategories = [...CATEGORIES.filter((category) => category !== 'savings').map((id) => ({ id, name: t(`category.${id}`) })), ...store.listCustomCategories()];
   $('#category-drop-zones').innerHTML = paycheck ? dropCategories.map(({ id, name }) =>
@@ -117,8 +136,7 @@ function render() {
   const savingEntries = entries.filter((item) => item.kind === 'saving');
   const expensesUsd = sumUsd(expenseEntries);
   const savingsUsd = sumUsd(savingEntries);
-  const remainingUsd = Number.isSafeInteger(paycheck.usdMinor) && Number.isSafeInteger(expensesUsd) && Number.isSafeInteger(savingsUsd)
-    ? paycheck.usdMinor - expensesUsd - savingsUsd : null;
+  const remainingUsd = convertRemainingToUsdMinor(paycheck, totals.remainingMinor);
   $('#pay-total').textContent = paycheckCash(totals.payMinor, paycheck);
   $('#expenses-total').textContent = paycheckCash(totals.expensesMinor, paycheck);
   $('#savings-total').textContent = paycheckCash(totals.savingsMinor, paycheck);
@@ -151,12 +169,21 @@ function openPaycheck(item = null) {
   form.reset();
   form.elements.label.value = item?.label ?? '';
   form.elements.payDate.value = item?.payDate ?? new Date().toISOString().slice(0, 10);
-  form.elements.currencyCode.value = item?.currencyCode ?? 'USD';
-  form.elements.fractionDigits.value = String(item?.fractionDigits ?? 2);
+  const currencyCode = item?.currencyCode ?? 'USD';
+  const currencySelect = form.elements.currencyCode;
+  [...currencySelect.options].filter((option) => option.dataset.legacyCurrency === 'true').forEach((option) => option.remove());
+  if (![...currencySelect.options].some((option) => option.value === currencyCode)) {
+    const legacyOption = new Option(`${currencyCode} (${t('existingCurrency')})`, currencyCode);
+    legacyOption.dataset.legacyCurrency = 'true';
+    currencySelect.add(legacyOption);
+  }
+  currencySelect.value = currencyCode;
+  form.elements.fractionDigits.value = String(item?.fractionDigits ?? currencyDigits(currencyCode));
   form.elements.pay.value = item ? (item.payMinor / 10 ** item.fractionDigits).toFixed(item.fractionDigits) : '';
+  setFormattedMoneyInput(form.elements.pay, Number(form.elements.fractionDigits.value));
+  form.elements.pay.placeholder = Number(form.elements.fractionDigits.value) === 3 ? '0.000' : '0.00';
   const currencyLocked = Boolean(item?.entries?.length);
   form.elements.currencyCode.disabled = currencyLocked;
-  form.elements.fractionDigits.disabled = currencyLocked;
   $('#currency-lock-hint').hidden = !currencyLocked;
   $('#currency-lock-hint').textContent = currencyLocked ? t('currencyLock') : '';
   $('#paycheck-dialog-title').textContent = t(item ? 'editPaycheckTitle' : 'addPaycheckTitle');
@@ -184,6 +211,8 @@ function openEntry(item = null) {
   form.elements.note.value = item ? entryDescription(item) : '';
   form.elements.categoryOverride.value = item?.categorySource === 'manual' ? item.category : 'auto';
   form.elements.amount.value = item ? (item.amountMinor / 10 ** (item.fractionDigits ?? paycheck.fractionDigits)).toFixed(item.fractionDigits ?? paycheck.fractionDigits) : '';
+  setFormattedMoneyInput(form.elements.amount, paycheck.fractionDigits);
+  form.elements.amount.placeholder = paycheck.fractionDigits === 3 ? '0.000' : '0.00';
   $('#entry-currency-label').textContent = `(${paycheck.currencyCode})`;
   $('#entry-dialog-title').textContent = t(item ? 'editEntryTitle' : 'addEntryTitle');
   $('#entry-error').textContent = '';
@@ -241,6 +270,51 @@ $('#language-toggle').addEventListener('click', () => {
 $('#add-paycheck').addEventListener('click', () => openPaycheck());
 $('#add-paycheck-inline').addEventListener('click', () => openPaycheck());
 $('#add-entry').addEventListener('click', () => openEntry());
+$('#paycheck-form').elements.pay.addEventListener('input', (event) => setFormattedMoneyInput(event.currentTarget, Number($('#paycheck-form').elements.fractionDigits.value)));
+$('#entry-form').elements.amount.addEventListener('input', (event) => {
+  const paycheck = store.getPaycheck(selectedId);
+  if (paycheck) setFormattedMoneyInput(event.currentTarget, paycheck.fractionDigits);
+});
+$('#paycheck-form').elements.currencyCode.addEventListener('change', (event) => {
+  const form = $('#paycheck-form');
+  form.elements.fractionDigits.value = String(currencyDigits(event.currentTarget.value));
+  setFormattedMoneyInput(form.elements.pay, Number(form.elements.fractionDigits.value));
+  form.elements.pay.placeholder = Number(form.elements.fractionDigits.value) === 3 ? '0.000' : '0.00';
+});
+function exportBackup() {
+  try {
+    const createdAt = new Date().toISOString();
+    store.markBackupCreated(createdAt);
+    const contents = JSON.stringify(createBackup(store.read(), createdAt), null, 2);
+    const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `paycheck-tracker-backup-${createdAt.slice(0, 10)}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $('#backup-status').textContent = t('backupDownloaded');
+    render();
+  } catch (error) { $('#backup-status').textContent = translateError(error); }
+}
+$('#export-backup').addEventListener('click', exportBackup);
+$('#reminder-backup').addEventListener('click', exportBackup);
+$('#import-backup').addEventListener('click', () => $('#backup-file').click());
+$('#backup-file').addEventListener('change', async (event) => {
+  const file = event.currentTarget.files?.[0];
+  if (!file) return;
+  try {
+    const imported = parseBackup(await file.text());
+    const current = store.read();
+    if ((current.paychecks.length || current.customCategories.length) && !window.confirm(t('restoreConfirm'))) return;
+    store.replaceAll(imported);
+    selectedId = null;
+    $('#backup-status').textContent = t('backupRestored');
+    render();
+  } catch (error) { $('#backup-status').textContent = translateError(error); }
+  finally { event.currentTarget.value = ''; }
+});
 $('#manage-categories').addEventListener('click', () => { renderCustomCategoryList(); $('#category-error').textContent = ''; $('#category-save-status').textContent = ''; $('#custom-category-name').value = ''; $('#categories-dialog').showModal(); });
 $('#categories-form').addEventListener('submit', (event) => {
   event.preventDefault();
@@ -338,7 +412,8 @@ $('#paycheck-form').addEventListener('submit', (event) => {
   let payMinor;
   try { payMinor = parseAmountToMinorUnits(form.elements.pay.value, digits); }
   catch (error) { $('#paycheck-error').textContent = translateError(error); return; }
-  if (!/^[A-Z]{3}$/.test(currencyCode)) { $('#paycheck-error').textContent = t('invalidCurrency'); return; }
+  const legacyCurrency = editingPaycheckId && store.getPaycheck(editingPaycheckId)?.currencyCode === currencyCode;
+  if (!['USD', 'IQD'].includes(currencyCode) && !legacyCurrency) { $('#paycheck-error').textContent = t('invalidCurrency'); return; }
   withSubmitState(form, t('rateLoading'), async () => {
     const rate = await getUsdRateSnapshot(currencyCode, { storage: store.storage });
     const values = {

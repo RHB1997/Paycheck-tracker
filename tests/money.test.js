@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatMoney, parseAmountToMinorUnits, summarize } from '../js/money.js';
+import { formatDate, formatMoney, formatMoneyInput, parseAmountToMinorUnits, summarize } from '../js/money.js';
 
 test('parses decimal input into exact integer minor units', () => {
   assert.equal(parseAmountToMinorUnits('1,234.56', 2), 123456);
@@ -15,6 +15,14 @@ test('rejects invalid precision and malformed amount strings', () => {
   assert.throws(() => parseAmountToMinorUnits('-1.00', 2), /valid amount/);
   assert.throws(() => parseAmountToMinorUnits('1.2', 0), /valid amount/);
   assert.throws(() => parseAmountToMinorUnits('1', 4), /between 0 and 3/);
+});
+
+test('groups money input while preserving decimal entry and Arabic digits', () => {
+  assert.equal(formatMoneyInput('1234567.89', 2), '1,234,567.89');
+  assert.equal(formatMoneyInput('١٢٣٤٥٦٧٫٨٩', 2), '1,234,567.89');
+  assert.equal(formatMoneyInput('1234.5678', 3), '1,234.567');
+  assert.equal(formatMoneyInput('1234.56', 0), '1,234');
+  assert.equal(formatMoneyInput('abc'), '');
 });
 
 test('formats a currency at the paycheck decimal precision', () => {

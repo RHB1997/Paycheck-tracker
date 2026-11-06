@@ -20,6 +20,7 @@ export class LocalStore {
       const migrated = {
         version: STORAGE_VERSION,
         customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [],
+        lastBackupAt: saved.lastBackupAt ?? null,
         paychecks: saved.paychecks.map((old) => {
           const entries = Array.isArray(old.entries) ? old.entries.map((entry) => {
             const savedEntry = { ...entry };
@@ -49,6 +50,15 @@ export class LocalStore {
   write(data) {
     try { this.storage.setItem(STORAGE_KEY, JSON.stringify(data)); }
     catch (error) { error.code = 'storageError'; throw error; }
+  }
+  markBackupCreated(at) {
+    const data = this.read();
+    data.lastBackupAt = at;
+    data.version = STORAGE_VERSION;
+    this.write(data);
+  }
+  replaceAll(data) {
+    this.write({ version: STORAGE_VERSION, paychecks: data.paychecks, customCategories: data.customCategories, lastBackupAt: data.lastBackupAt ?? null });
   }
   listPaychecks() { return [...this.read().paychecks].sort((a, b) => b.payDate.localeCompare(a.payDate) || b.id - a.id); }
   getPaycheck(id) { return this.read().paychecks.find((item) => item.id === Number(id)) ?? null; }

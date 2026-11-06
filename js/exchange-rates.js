@@ -68,4 +68,16 @@ export function convertMinorToUsdMinor(amountMinor, fractionDigits, usdRate) {
   return Math.round((amountMinor / (10 ** fractionDigits)) * usdRate * 100);
 }
 
+export function convertRemainingToUsdMinor(paycheck, remainingMinor) {
+  if (!Number.isSafeInteger(remainingMinor)) return null;
+  const usdRate = paycheck.currencyCode === 'USD' ? 1 : paycheck.usdRate;
+  if (Number.isFinite(usdRate) && usdRate > 0) {
+    return convertMinorToUsdMinor(remainingMinor, paycheck.fractionDigits, usdRate);
+  }
+  if (Number.isSafeInteger(paycheck.usdMinor) && Number.isSafeInteger(paycheck.payMinor) && paycheck.payMinor !== 0) {
+    return Math.round(paycheck.usdMinor * remainingMinor / paycheck.payMinor);
+  }
+  return null;
+}
+
 export { CACHE_KEY as RATE_CACHE_KEY, ENDPOINT as RATE_ENDPOINT };

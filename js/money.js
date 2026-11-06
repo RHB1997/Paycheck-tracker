@@ -28,6 +28,24 @@ export function parseAmountToMinorUnits(value, fractionDigits = 2) {
   return minor;
 }
 
+export function formatMoneyInput(value, fractionDigits = 2) {
+  if (!Number.isInteger(fractionDigits) || fractionDigits < 0 || fractionDigits > 3) return String(value ?? '');
+  const normalized = String(value ?? '')
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/[٫.]/g, '.')
+    .replace(/,/g, '');
+  const filtered = normalized.replace(/[^0-9.]/g, '');
+  const point = filtered.indexOf('.');
+  const hasDecimal = fractionDigits > 0 && point >= 0;
+  let whole = (point >= 0 ? filtered.slice(0, point) : filtered).replace(/\D/g, '');
+  let fraction = hasDecimal ? filtered.slice(point + 1).replace(/\D/g, '').slice(0, fractionDigits) : '';
+  whole = whole.replace(/^0+(?=\d)/, '');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (!grouped && !hasDecimal) return '';
+  return `${grouped || '0'}${hasDecimal ? `.${fraction}` : ''}`;
+}
+
 export function formatMoney(minor, currencyCode = 'USD', fractionDigits = 2, locale = 'en-US') {
   return new Intl.NumberFormat(locale, {
     style: 'currency', currency: currencyCode,

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convertMinorToUsdMinor, getUsdRateSnapshot, RATE_CACHE_KEY } from '../js/exchange-rates.js';
+import { convertMinorToUsdMinor, convertRemainingToUsdMinor, getUsdRateSnapshot, RATE_CACHE_KEY } from '../js/exchange-rates.js';
 
 class MemoryStorage {
   values = new Map();
@@ -49,4 +49,12 @@ test('uses one to one USD conversion without a network request', async () => {
   const snapshot = await getUsdRateSnapshot('USD', { now: () => Date.UTC(2026, 0, 1), fetcher: () => { throw new Error('Should not fetch'); } });
   assert.equal(snapshot.usdRate, 1);
   assert.equal(convertMinorToUsdMinor(1234, 2, snapshot.usdRate), 1234);
+});
+
+test('converts remaining using the paycheck rate even when entries have no USD snapshots', () => {
+  const paycheck = { currencyCode: 'IQD', fractionDigits: 3, usdRate: 0.00076, payMinor: 1000000, usdMinor: 76 };
+  assert.equal(convertRemainingToUsdMinor(paycheck, 500000), 38);
+  assert.equal(convertRemainingToUsdMinor({ ...paycheck, usdRate: undefined }, 500000), 38);
+  assert.equal(convertRemainingToUsdMinor({ currencyCode: 'USD', fractionDigits: 2 }, 1234), 1234);
+  assert.equal(convertRemainingToUsdMinor({ currencyCode: 'IQD', fractionDigits: 3 }, 500000), null);
 });

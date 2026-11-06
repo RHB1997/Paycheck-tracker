@@ -71,6 +71,19 @@ test('retains recorded USD snapshots when reloading local data', () => {
   assert.equal(loaded.listEntries(paycheckId)[0].usdMinor, 1);
 });
 
+test('records backup time and restores backed up data without changing its content', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalStore(storage);
+  const paycheckId = store.savePaycheck({ label: 'Salary', payDate: '2026-11-01', currencyCode: 'USD', fractionDigits: 2, payMinor: 300000, usdMinor: 300000, usdRate: 1, entries: [] });
+  const backup = store.read();
+  store.markBackupCreated('2026-11-07T12:00:00.000Z');
+  assert.equal(store.read().lastBackupAt, '2026-11-07T12:00:00.000Z');
+  store.deletePaycheck(paycheckId);
+  store.replaceAll(backup);
+  assert.equal(store.listPaychecks()[0].label, 'Salary');
+  assert.equal(store.read().lastBackupAt, null);
+});
+
 test('persists manually reassigned entry categories through reload and later edits', () => {
   const storage = new MemoryStorage();
   const store = new LocalStore(storage);
