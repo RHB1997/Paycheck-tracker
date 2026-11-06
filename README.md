@@ -2,6 +2,8 @@
 
 # paycheck.
 
+https://rhb1997.github.io/Paycheck-tracker/
+
 **Your pay, clearly accounted for.**
 
 A local-first web app for tracking paychecks, expenses, savings, and USD equivalents, with English and Arabic support.
