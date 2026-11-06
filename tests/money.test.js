@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatMoney, formatMoneyInput, parseAmountToMinorUnits, summarize } from '../js/money.js';
+import { defaultFractionDigitsForCurrency, formatDate, formatMoney, formatMoneyInput, parseAmountToMinorUnits, summarize } from '../js/money.js';
 
 test('parses decimal input into exact integer minor units', () => {
   assert.equal(parseAmountToMinorUnits('1,234.56', 2), 123456);
@@ -23,6 +23,13 @@ test('groups money input while preserving decimal entry and Arabic digits', () =
   assert.equal(formatMoneyInput('1234.5678', 3), '1,234.567');
   assert.equal(formatMoneyInput('1234.56', 0), '1,234');
   assert.equal(formatMoneyInput('abc'), '');
+});
+
+test('uses whole IQD and two decimal places for USD', () => {
+  assert.equal(defaultFractionDigitsForCurrency('IQD'), 0);
+  assert.equal(defaultFractionDigitsForCurrency('usd'), 2);
+  assert.equal(formatMoneyInput('1234.56', defaultFractionDigitsForCurrency('IQD')), '1,234');
+  assert.equal(parseAmountToMinorUnits('1,234', defaultFractionDigitsForCurrency('IQD')), 1234);
 });
 
 test('formats a currency at the paycheck decimal precision', () => {

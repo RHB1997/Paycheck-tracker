@@ -46,6 +46,10 @@ export function formatMoneyInput(value, fractionDigits = 2) {
   return `${grouped || '0'}${hasDecimal ? `.${fraction}` : ''}`;
 }
 
+export function defaultFractionDigitsForCurrency(currencyCode) {
+  return String(currencyCode).toUpperCase() === 'IQD' ? 0 : 2;
+}
+
 export function formatMoney(minor, currencyCode = 'USD', fractionDigits = 2, locale = 'en-US') {
   return new Intl.NumberFormat(locale, {
     style: 'currency', currency: currencyCode,

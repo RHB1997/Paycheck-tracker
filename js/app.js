@@ -3,7 +3,7 @@ import { categoryOverridePatch, entryDescription } from './entries.js';
 import { createBackup, isBackupDue, parseBackup } from './backup.js';
 import { getUsdRateSnapshot, convertMinorToUsdMinor, convertRemainingToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
-import { formatDate, formatMoney, formatMoneyInput, parseAmountToMinorUnits, summarize } from './money.js';
+import { defaultFractionDigitsForCurrency, formatDate, formatMoney, formatMoneyInput, parseAmountToMinorUnits, summarize } from './money.js';
 import { LocalStore } from './storage.js';
 
 const store = new LocalStore();
@@ -99,7 +99,7 @@ function setFormattedMoneyInput(input, fractionDigits) {
   input.setSelectionRange(nextCursor, nextCursor);
 }
 
-function currencyDigits(code) { return code === 'IQD' ? 3 : 2; }
+function moneyPlaceholder(digits) { return digits === 0 ? '0' : `0.${'0'.repeat(digits)}`; }
 
 function render() {
   const paychecks = store.listPaychecks();
@@ -178,10 +178,10 @@ function openPaycheck(item = null) {
     currencySelect.add(legacyOption);
   }
   currencySelect.value = currencyCode;
-  form.elements.fractionDigits.value = String(item?.fractionDigits ?? currencyDigits(currencyCode));
+  form.elements.fractionDigits.value = String(item?.fractionDigits ?? defaultFractionDigitsForCurrency(currencyCode));
   form.elements.pay.value = item ? (item.payMinor / 10 ** item.fractionDigits).toFixed(item.fractionDigits) : '';
   setFormattedMoneyInput(form.elements.pay, Number(form.elements.fractionDigits.value));
-  form.elements.pay.placeholder = Number(form.elements.fractionDigits.value) === 3 ? '0.000' : '0.00';
+  form.elements.pay.placeholder = moneyPlaceholder(Number(form.elements.fractionDigits.value));
   const currencyLocked = Boolean(item?.entries?.length);
   form.elements.currencyCode.disabled = currencyLocked;
   $('#currency-lock-hint').hidden = !currencyLocked;
@@ -212,7 +212,7 @@ function openEntry(item = null) {
   form.elements.categoryOverride.value = item?.categorySource === 'manual' ? item.category : 'auto';
   form.elements.amount.value = item ? (item.amountMinor / 10 ** (item.fractionDigits ?? paycheck.fractionDigits)).toFixed(item.fractionDigits ?? paycheck.fractionDigits) : '';
   setFormattedMoneyInput(form.elements.amount, paycheck.fractionDigits);
-  form.elements.amount.placeholder = paycheck.fractionDigits === 3 ? '0.000' : '0.00';
+  form.elements.amount.placeholder = moneyPlaceholder(paycheck.fractionDigits);
   $('#entry-currency-label').textContent = `(${paycheck.currencyCode})`;
   $('#entry-dialog-title').textContent = t(item ? 'editEntryTitle' : 'addEntryTitle');
   $('#entry-error').textContent = '';
@@ -277,9 +277,9 @@ $('#entry-form').elements.amount.addEventListener('input', (event) => {
 });
 $('#paycheck-form').elements.currencyCode.addEventListener('change', (event) => {
   const form = $('#paycheck-form');
-  form.elements.fractionDigits.value = String(currencyDigits(event.currentTarget.value));
+  form.elements.fractionDigits.value = String(defaultFractionDigitsForCurrency(event.currentTarget.value));
   setFormattedMoneyInput(form.elements.pay, Number(form.elements.fractionDigits.value));
-  form.elements.pay.placeholder = Number(form.elements.fractionDigits.value) === 3 ? '0.000' : '0.00';
+  form.elements.pay.placeholder = moneyPlaceholder(Number(form.elements.fractionDigits.value));
 });
 function exportBackup() {
   try {
