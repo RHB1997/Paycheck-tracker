@@ -1,5 +1,6 @@
 import { inferCategory, CATEGORIES, resolveEntryCategory } from './categories.js';
 import { categoryOverridePatch, entryDescription } from './entries.js';
+import { sortEntries } from './entry-sort.js';
 import { createBackup, isBackupDue, parseBackup } from './backup.js';
 import { getUsdRateSnapshot, convertMinorToUsdMinor, convertRemainingToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
@@ -19,6 +20,7 @@ let editingPaycheckId = null;
 let editingEntryId = null;
 let pendingDelete = null;
 let dragState = null;
+let entrySort = 'date-desc';
 
 function t(key, values) { return translate(language, key, values); }
 function locale() { return language === 'ar' ? 'ar-IQ' : 'en-US'; }
@@ -115,6 +117,7 @@ function render() {
 
   const paycheck = store.getPaycheck(selectedId);
   const entries = paycheck ? store.listEntries(paycheck.id) : [];
+  const displayEntries = sortEntries(entries, entrySort, (item) => categoryName(item.category, item.note, item.kind));
   const totals = paycheck ? summarize(paycheck, entries) : null;
   $('#backup-reminder').hidden = !isBackupDue(store.read().lastBackupAt);
   $('#category-drop-help').hidden = !paycheck;
@@ -150,7 +153,9 @@ function render() {
   $('#savings-note').textContent = `${savingEntries.length} ${savingEntries.length === 1 ? t('entry') : t('entries')}`;
   $('#remaining-note').textContent = t('fromSelected');
   $('#net-track-fill').style.width = `${totals.payMinor > 0 ? Math.max(0, Math.min(100, totals.remainingMinor / totals.payMinor * 100)) : 0}%`;
-  $('#activity-list').innerHTML = entries.length ? entries.map((item) => {
+  $('#activity-sort').disabled = !paycheck;
+  $('#activity-sort').value = entrySort;
+  $('#activity-list').innerHTML = displayEntries.length ? displayEntries.map((item) => {
     const saving = item.kind === 'saving';
     const code = item.currencyCode || paycheck.currencyCode;
     const digits = item.fractionDigits ?? paycheck.fractionDigits;
@@ -347,6 +352,7 @@ $('#paycheck-list').addEventListener('keydown', (event) => {
   }
 });
 $('#activity-list').addEventListener('click', (event) => { const button = event.target.closest('[data-menu]'); if (button) menuFor(button); });
+$('#activity-sort').addEventListener('change', (event) => { entrySort = event.currentTarget.value; render(); });
 $('#activity-list').addEventListener('pointerdown', (event) => {
   const handle = event.target.closest('[data-drag-entry]');
   if (!handle || event.button !== 0) return;
