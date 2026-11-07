@@ -3,30 +3,6 @@ const STORAGE_VERSION = 5;
 const BUILTIN_CATEGORY_KEYS = ['housing', 'food', 'transport', 'utilities', 'health', 'shopping', 'subscriptions', 'education', 'travel', 'savings', 'other'];
 
 import { inferCategory } from './categories.js';
-import { convertMinorToUsdMinor } from './exchange-rates.js';
-
-function migrateIqdRecord(record, inheritedCurrency, inheritedDigits, amountField) {
-  const currency = String(record.currencyCode ?? inheritedCurrency ?? '').toUpperCase();
-  const digits = Number.isInteger(record.fractionDigits) ? record.fractionDigits : inheritedDigits;
-  if (currency !== 'IQD' || digits !== 3) return record;
-  record.fractionDigits = 0;
-  if (Number.isSafeInteger(record[amountField]) && Number.isFinite(record.usdRate) && record.usdRate > 0) {
-    record.usdMinor = convertMinorToUsdMinor(record[amountField], 0, record.usdRate);
-  } else if (Number.isSafeInteger(record.usdMinor) && Number.isSafeInteger(record.usdMinor * 1000)) {
-    record.usdMinor *= 1000;
-  }
-  return record;
-}
-
-function hasLegacyIqdPrecision(saved) {
-  return saved.paychecks.some((paycheck) => {
-    const paycheckCurrency = String(paycheck.currencyCode ?? '').toUpperCase();
-    if (paycheckCurrency === 'IQD' && paycheck.fractionDigits === 3) return true;
-    return (paycheck.entries ?? []).some((entry) =>
-      String(entry.currencyCode ?? paycheckCurrency).toUpperCase() === 'IQD' &&
-      (Number.isInteger(entry.fractionDigits) ? entry.fractionDigits : paycheck.fractionDigits) === 3);
-  });
-}
 
 export function migrateStoredData(saved) {
   return {
@@ -40,14 +16,13 @@ export function migrateStoredData(saved) {
         if (!String(savedEntry.note ?? '').trim() && String(savedEntry.category ?? '').trim()) {
           savedEntry.note = String(savedEntry.category).trim();
         }
-        return migrateIqdRecord(savedEntry, old.currencyCode, old.fractionDigits, 'amountMinor');
+        return savedEntry;
       }) : [] };
       if (Number.isInteger(paycheck.grossMinor)) {
         paycheck.payMinor = Math.max(0, paycheck.grossMinor - (paycheck.taxWithheldMinor ?? 0));
       }
       delete paycheck.grossMinor;
       delete paycheck.taxWithheldMinor;
-      migrateIqdRecord(paycheck, paycheck.currencyCode, paycheck.fractionDigits, 'payMinor');
       return paycheck;
     }),
   };
@@ -63,7 +38,7 @@ export class LocalStore {
     try {
       const saved = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? '{"paychecks":[]}');
       if (!Array.isArray(saved.paychecks)) return { version: STORAGE_VERSION, paychecks: [], customCategories: [] };
-      if (saved.version === STORAGE_VERSION && !hasLegacyIqdPrecision(saved)) {
+      if (saved.version === STORAGE_VERSION) {
         return { ...saved, customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [] };
       }
       const migrated = migrateStoredData(saved);

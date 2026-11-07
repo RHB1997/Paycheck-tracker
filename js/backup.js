@@ -1,4 +1,4 @@
-import { migrateStoredData, STORAGE_VERSION } from './storage.js?v=iqd-unit-fix';
+import { migrateStoredData, STORAGE_VERSION } from './storage.js';
 
 export const BACKUP_FORMAT = 'paycheck-tracker-backup';
 export const BACKUP_VERSION = 1;

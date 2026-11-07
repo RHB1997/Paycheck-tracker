@@ -129,7 +129,7 @@ test('migrates old entries so legacy descriptions are separate before any catego
   assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 5);
 });
 
-test('reinterprets legacy IQD thousandths as whole dinars and refreshes USD using saved rates', () => {
+test('preserves legacy IQD amounts and USD snapshots during other data migrations', () => {
   const storage = new MemoryStorage();
   storage.setItem(STORAGE_KEY, JSON.stringify({ version: 4, customCategories: [], paychecks: [{
     id: 21, label: 'Legacy IQD', payDate: '2026-10-01', currencyCode: 'IQD', fractionDigits: 3,
@@ -141,12 +141,12 @@ test('reinterprets legacy IQD thousandths as whole dinars and refreshes USD usin
   }] }));
   const migrated = new LocalStore(storage).getPaycheck(21);
   assert.equal(migrated.payMinor, 45000);
-  assert.equal(migrated.fractionDigits, 0);
-  assert.equal(migrated.usdMinor, 3420);
+  assert.equal(migrated.fractionDigits, 3);
+  assert.equal(migrated.usdMinor, 3);
   assert.equal(migrated.usdRateAsOf, '2026-10-01T00:00:00.000Z');
   assert.equal(migrated.entries[0].amountMinor, 12000);
-  assert.equal(migrated.entries[0].fractionDigits, 0);
-  assert.equal(migrated.entries[0].usdMinor, 912);
+  assert.equal(migrated.entries[0].fractionDigits, 3);
+  assert.equal(migrated.entries[0].usdMinor, 1);
   assert.equal(migrated.entries[1].fractionDigits, 0);
   assert.equal(migrated.entries[1].amountMinor, 45000);
   assert.equal(migrated.entries[1].usdMinor, 3420);
@@ -154,7 +154,7 @@ test('reinterprets legacy IQD thousandths as whole dinars and refreshes USD usin
   assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 5);
 });
 
-test('repairs legacy IQD precision left inside the current storage version', () => {
+test('does not alter legacy IQD precision in current-version data', () => {
   const storage = new MemoryStorage();
   storage.setItem(STORAGE_KEY, JSON.stringify({ version: 5, customCategories: [], paychecks: [{
     id: 22, label: 'Already migrated version', payDate: '2026-10-02', currencyCode: 'IQD', fractionDigits: 3,
@@ -164,12 +164,12 @@ test('repairs legacy IQD precision left inside the current storage version', () 
     ],
   }] }));
   const migrated = new LocalStore(storage).getPaycheck(22);
-  assert.equal(migrated.fractionDigits, 0);
+  assert.equal(migrated.fractionDigits, 3);
   assert.equal(migrated.payMinor, 45000);
-  assert.equal(migrated.usdMinor, 3420);
-  assert.equal(migrated.entries[0].fractionDigits, 0);
+  assert.equal(migrated.usdMinor, 3);
+  assert.equal(migrated.entries[0].fractionDigits, 3);
   assert.equal(migrated.entries[0].amountMinor, 12000);
-  assert.equal(migrated.entries[0].usdMinor, 912);
+  assert.equal(migrated.entries[0].usdMinor, 1);
   assert.equal(migrated.entries[1].fractionDigits, 0);
   assert.equal(migrated.entries[1].amountMinor, 45000);
   assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 5);
