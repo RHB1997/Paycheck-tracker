@@ -1,8 +1,47 @@
 const STORAGE_KEY = 'paycheck-tracker-data-v1';
-const STORAGE_VERSION = 4;
+const STORAGE_VERSION = 5;
 const BUILTIN_CATEGORY_KEYS = ['housing', 'food', 'transport', 'utilities', 'health', 'shopping', 'subscriptions', 'education', 'travel', 'savings', 'other'];
 
 import { inferCategory } from './categories.js';
+import { convertMinorToUsdMinor } from './exchange-rates.js';
+
+function migrateIqdRecord(record, inheritedCurrency, inheritedDigits, amountField) {
+  const currency = String(record.currencyCode ?? inheritedCurrency ?? '').toUpperCase();
+  const digits = Number.isInteger(record.fractionDigits) ? record.fractionDigits : inheritedDigits;
+  if (currency !== 'IQD' || digits !== 3) return record;
+  record.fractionDigits = 0;
+  if (Number.isSafeInteger(record[amountField]) && Number.isFinite(record.usdRate) && record.usdRate > 0) {
+    record.usdMinor = convertMinorToUsdMinor(record[amountField], 0, record.usdRate);
+  } else if (Number.isSafeInteger(record.usdMinor) && Number.isSafeInteger(record.usdMinor * 1000)) {
+    record.usdMinor *= 1000;
+  }
+  return record;
+}
+
+export function migrateStoredData(saved) {
+  return {
+    ...saved,
+    version: STORAGE_VERSION,
+    customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [],
+    lastBackupAt: saved.lastBackupAt ?? null,
+    paychecks: saved.paychecks.map((old) => {
+      const paycheck = { ...old, entries: Array.isArray(old.entries) ? old.entries.map((entry) => {
+        const savedEntry = { ...entry };
+        if (!String(savedEntry.note ?? '').trim() && String(savedEntry.category ?? '').trim()) {
+          savedEntry.note = String(savedEntry.category).trim();
+        }
+        return migrateIqdRecord(savedEntry, old.currencyCode, old.fractionDigits, 'amountMinor');
+      }) : [] };
+      if (Number.isInteger(paycheck.grossMinor)) {
+        paycheck.payMinor = Math.max(0, paycheck.grossMinor - (paycheck.taxWithheldMinor ?? 0));
+      }
+      delete paycheck.grossMinor;
+      delete paycheck.taxWithheldMinor;
+      migrateIqdRecord(paycheck, paycheck.currencyCode, paycheck.fractionDigits, 'payMinor');
+      return paycheck;
+    }),
+  };
+}
 
 export class LocalStore {
   constructor(storage = globalThis.localStorage) {
@@ -17,28 +56,7 @@ export class LocalStore {
       if (saved.version === STORAGE_VERSION) {
         return { ...saved, customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [] };
       }
-      const migrated = {
-        version: STORAGE_VERSION,
-        customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [],
-        lastBackupAt: saved.lastBackupAt ?? null,
-        paychecks: saved.paychecks.map((old) => {
-          const entries = Array.isArray(old.entries) ? old.entries.map((entry) => {
-            const savedEntry = { ...entry };
-            // Before category overrides existed, descriptions were sometimes stored only in `category`.
-            if (!String(savedEntry.note ?? '').trim() && String(savedEntry.category ?? '').trim()) {
-              savedEntry.note = String(savedEntry.category).trim();
-            }
-            return savedEntry;
-          }) : [];
-          const paycheck = { ...old, entries };
-          if (Number.isInteger(paycheck.grossMinor)) {
-            paycheck.payMinor = Math.max(0, paycheck.grossMinor - (paycheck.taxWithheldMinor ?? 0));
-          }
-          delete paycheck.grossMinor;
-          delete paycheck.taxWithheldMinor;
-          return paycheck;
-        }),
-      };
+      const migrated = migrateStoredData(saved);
       try { this.write(migrated); }
       catch { /* Keep showing migrated records if the browser refuses the rewrite. */ }
       return migrated;
@@ -160,4 +178,4 @@ export class LocalStore {
   }
 }
 
-export { STORAGE_KEY };
+export { STORAGE_KEY, STORAGE_VERSION };

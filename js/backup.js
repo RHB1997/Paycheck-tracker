@@ -1,3 +1,5 @@
+import { migrateStoredData, STORAGE_VERSION } from './storage.js';
+
 export const BACKUP_FORMAT = 'paycheck-tracker-backup';
 export const BACKUP_VERSION = 1;
 
@@ -20,7 +22,7 @@ export function parseBackup(text) {
   }
   const data = backup?.data;
   const validHeader = backup?.format === BACKUP_FORMAT && backup?.backupVersion === BACKUP_VERSION && typeof backup?.createdAt === 'string';
-  const validData = data?.version === 4 && Array.isArray(data?.paychecks) && Array.isArray(data?.customCategories);
+  const validData = [4, STORAGE_VERSION].includes(data?.version) && Array.isArray(data?.paychecks) && Array.isArray(data?.customCategories);
   const validPaychecks = validData && data.paychecks.every((paycheck) =>
     Number.isSafeInteger(paycheck?.id) && typeof paycheck.payDate === 'string' &&
     typeof paycheck.currencyCode === 'string' && Number.isInteger(paycheck.fractionDigits) &&
@@ -34,5 +36,6 @@ export function parseBackup(text) {
     error.code = 'invalidBackup';
     throw error;
   }
-  return { ...data, lastBackupAt: data.lastBackupAt ?? backup.createdAt };
+  const restored = data.version === STORAGE_VERSION ? data : migrateStoredData(data);
+  return { ...restored, lastBackupAt: restored.lastBackupAt ?? backup.createdAt };
 }
