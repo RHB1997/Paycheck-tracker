@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#f5f6f2">
     <meta name="description" content="Track paychecks, expenses, and savings privately in your browser. English and Arabic supported.">
     <title>Paycheck — money, in perspective</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="rtl.css">
-    <script type="module" src="js/app.js"></script>
+    <link rel="stylesheet" href="styles.css?v=entry-sort-v2">
+    <link rel="stylesheet" href="rtl.css?v=entry-sort-v2">
+    <script type="module" src="js/app.js?v=entry-sort-v2"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -68,12 +68,11 @@
             <div id="paycheck-list" class="paycheck-list"></div>
           </article>
           <article class="panel activity-panel">
-            <div class="panel-heading"><div><p class="eyebrow" data-i18n="detailsEyebrow">THE DETAILS</p><h2 id="activity-title" data-i18n="recentActivity">Recent activity</h2></div><button class="text-button" id="add-entry" disabled data-i18n="addEntry">＋ Add entry</button></div>
+            <div class="panel-heading activity-panel-heading"><div><p class="eyebrow" data-i18n="detailsEyebrow">THE DETAILS</p><h2 id="activity-title" data-i18n="recentActivity">Recent activity</h2></div><div class="activity-heading-actions"><label for="activity-sort" data-i18n="sortEntries">Sort by</label><select id="activity-sort" disabled data-i18n-aria-label="sortEntries"><option value="date-desc" data-i18n="sortDateNewest">Date: newest first</option><option value="amount-desc" data-i18n="sortAmountHighest">Amount: highest first</option><option value="amount-asc" data-i18n="sortAmountLowest">Amount: lowest first</option><option value="category" data-i18n="sortCategory">Category: A to Z</option></select><button class="text-button" id="add-entry" disabled data-i18n="addEntry">＋ Add entry</button></div></div>
             <p id="category-drop-help" class="category-drop-help" data-i18n="categoryDropHelp">Hold the grip on an expense, then drop it on a category to move it.</p>
             <button id="manage-categories" class="text-button category-manage" type="button" data-i18n="manageCategories">＋ Manage categories</button>
             <div id="category-drop-zones" class="category-drop-zones" aria-hidden="true"></div>
             <p id="category-drop-status" class="visually-hidden" aria-live="polite"></p>
-            <div class="activity-sort-row"><label for="activity-sort" data-i18n="sortEntries">Sort by</label><select id="activity-sort" disabled aria-label="Sort entries"><option value="date-desc" data-i18n="sortDateNewest">Date: newest first</option><option value="amount-desc" data-i18n="sortAmountHighest">Amount: highest first</option><option value="amount-asc" data-i18n="sortAmountLowest">Amount: lowest first</option><option value="category" data-i18n="sortCategory">Category: A to Z</option></select></div>
             <div id="activity-list" class="activity-list"></div>
           </article>
         </section>

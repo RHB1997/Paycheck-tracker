@@ -19,3 +19,13 @@ test('money inputs use grouped decimal text fields and currency is limited to US
   assert.match(html, /id="export-backup"/);
   assert.match(html, /id="import-backup"/);
 });
+
+test('exposes a labeled entry sort menu beside the activity heading', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /<label for="activity-sort"/);
+  assert.match(html, /id="activity-sort"/);
+  for (const value of ['date-desc', 'amount-desc', 'amount-asc', 'category']) {
+    assert.match(html, new RegExp(`option value="${value}"`));
+  }
+  assert.match(html, /activity-heading-actions[\s\S]*id="add-entry"/);
+});
