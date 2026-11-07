@@ -1,10 +1,10 @@
 import { inferCategory, CATEGORIES, resolveEntryCategory } from './categories.js';
 import { categoryOverridePatch, entryDescription } from './entries.js';
-import { createBackup, isBackupDue, parseBackup } from './backup.js';
+import { createBackup, isBackupDue, parseBackup } from './backup.js?v=iqd-unit-fix';
 import { getUsdRateSnapshot, convertMinorToUsdMinor, convertRemainingToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
 import { defaultFractionDigitsForCurrency, formatDate, formatMoney, formatMoneyInput, parseAmountToMinorUnits, summarize } from './money.js';
-import { LocalStore } from './storage.js';
+import { LocalStore } from './storage.js?v=iqd-unit-fix';
 
 const store = new LocalStore();
 const $ = (selector) => document.querySelector(selector);

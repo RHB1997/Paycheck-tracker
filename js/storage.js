@@ -18,6 +18,16 @@ function migrateIqdRecord(record, inheritedCurrency, inheritedDigits, amountFiel
   return record;
 }
 
+function hasLegacyIqdPrecision(saved) {
+  return saved.paychecks.some((paycheck) => {
+    const paycheckCurrency = String(paycheck.currencyCode ?? '').toUpperCase();
+    if (paycheckCurrency === 'IQD' && paycheck.fractionDigits === 3) return true;
+    return (paycheck.entries ?? []).some((entry) =>
+      String(entry.currencyCode ?? paycheckCurrency).toUpperCase() === 'IQD' &&
+      (Number.isInteger(entry.fractionDigits) ? entry.fractionDigits : paycheck.fractionDigits) === 3);
+  });
+}
+
 export function migrateStoredData(saved) {
   return {
     ...saved,
@@ -53,7 +63,7 @@ export class LocalStore {
     try {
       const saved = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? '{"paychecks":[]}');
       if (!Array.isArray(saved.paychecks)) return { version: STORAGE_VERSION, paychecks: [], customCategories: [] };
-      if (saved.version === STORAGE_VERSION) {
+      if (saved.version === STORAGE_VERSION && !hasLegacyIqdPrecision(saved)) {
         return { ...saved, customCategories: Array.isArray(saved.customCategories) ? saved.customCategories : [] };
       }
       const migrated = migrateStoredData(saved);

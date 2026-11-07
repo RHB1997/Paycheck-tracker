@@ -64,8 +64,8 @@ test('keeps migrated records readable if browser storage refuses the migration w
 test('retains recorded USD snapshots when reloading local data', () => {
   const storage = new MemoryStorage();
   const store = new LocalStore(storage);
-  const paycheckId = store.savePaycheck({ label: '', payDate: '2026-01-01', currencyCode: 'IQD', fractionDigits: 3, payMinor: 1000000, usdRate: 0.00076, usdMinor: 76, usdRateAsOf: '2026-11-02T00:00:00.000Z' });
-  store.saveEntry(paycheckId, { kind: 'expense', category: 'food', note: 'groceries', amountMinor: 10000, currencyCode: 'IQD', fractionDigits: 3, usdRate: 0.00076, usdMinor: 1, usdRateAsOf: '2026-11-02T00:00:00.000Z' });
+  const paycheckId = store.savePaycheck({ label: '', payDate: '2026-01-01', currencyCode: 'IQD', fractionDigits: 0, payMinor: 1000000, usdRate: 0.00076, usdMinor: 76, usdRateAsOf: '2026-11-02T00:00:00.000Z' });
+  store.saveEntry(paycheckId, { kind: 'expense', category: 'food', note: 'groceries', amountMinor: 10000, currencyCode: 'IQD', fractionDigits: 0, usdRate: 0.00076, usdMinor: 1, usdRateAsOf: '2026-11-02T00:00:00.000Z' });
   const loaded = new LocalStore(storage);
   assert.equal(loaded.getPaycheck(paycheckId).usdMinor, 76);
   assert.equal(loaded.listEntries(paycheckId)[0].usdMinor, 1);
@@ -151,6 +151,27 @@ test('reinterprets legacy IQD thousandths as whole dinars and refreshes USD usin
   assert.equal(migrated.entries[1].amountMinor, 45000);
   assert.equal(migrated.entries[1].usdMinor, 3420);
   assert.equal(migrated.entries[2].fractionDigits, 3);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 5);
+});
+
+test('repairs legacy IQD precision left inside the current storage version', () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEY, JSON.stringify({ version: 5, customCategories: [], paychecks: [{
+    id: 22, label: 'Already migrated version', payDate: '2026-10-02', currencyCode: 'IQD', fractionDigits: 3,
+    payMinor: 45000, usdRate: 0.00076, usdMinor: 3, entries: [
+      { id: 1, kind: 'expense', note: 'Legacy expense', currencyCode: 'IQD', fractionDigits: 3, amountMinor: 12000, usdRate: 0.00076, usdMinor: 1 },
+      { id: 2, kind: 'expense', note: 'Already whole', currencyCode: 'IQD', fractionDigits: 0, amountMinor: 45000, usdRate: 0.00076, usdMinor: 3420 },
+    ],
+  }] }));
+  const migrated = new LocalStore(storage).getPaycheck(22);
+  assert.equal(migrated.fractionDigits, 0);
+  assert.equal(migrated.payMinor, 45000);
+  assert.equal(migrated.usdMinor, 3420);
+  assert.equal(migrated.entries[0].fractionDigits, 0);
+  assert.equal(migrated.entries[0].amountMinor, 12000);
+  assert.equal(migrated.entries[0].usdMinor, 912);
+  assert.equal(migrated.entries[1].fractionDigits, 0);
+  assert.equal(migrated.entries[1].amountMinor, 45000);
   assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).version, 5);
 });
 
