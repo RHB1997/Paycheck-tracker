@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#f5f6f2">
     <meta name="description" content="Track paychecks, expenses, and savings privately in your browser. English and Arabic supported.">
     <title>Paycheck — money, in perspective</title>
-    <link rel="stylesheet" href="styles.css?v=net-worth-desktop-v1">
-    <link rel="stylesheet" href="rtl.css?v=net-worth-desktop-v1">
-    <script type="module" src="js/app.js?v=entry-sort-v2"></script>
+    <link rel="stylesheet" href="styles.css?v=net-worth-template-v2">
+    <link rel="stylesheet" href="rtl.css?v=net-worth-template-v2">
+    <script type="module" src="js/app.js?v=net-worth-template-v2"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -43,15 +43,23 @@
 
         <section class="page-heading">
           <div><p class="eyebrow" id="today-label" data-i18n="yourFinances">YOUR FINANCES</p><h1 data-i18n="heading">Your money, in perspective.</h1><p class="heading-copy" data-i18n="headingCopy">A clear view of every paycheck and where it goes.</p></div>
-          <button class="button button-primary" id="add-paycheck"><span aria-hidden="true">＋</span><span data-i18n="addPaycheck">Add paycheck</span></button>
         </section>
 
-        <section class="backup-tools" aria-label="Data backup">
-          <div class="backup-reminder" id="backup-reminder" hidden><span data-i18n="backupReminder">Protect your data with a backup. We recommend making one every 30 days.</span><button class="text-button" id="reminder-backup" type="button" data-i18n="backupExport">Download backup</button></div>
-          <div class="backup-actions"><button class="button button-secondary" id="export-backup" type="button" data-i18n="backupExport">Download backup</button><button class="button button-secondary" id="import-backup" type="button" data-i18n="backupRestore">Restore backup</button><input id="backup-file" type="file" accept="application/json,.json" hidden><span id="backup-status" role="status" aria-live="polite"></span></div>
+        <section class="template-top">
+          <aside class="template-actions panel">
+            <div class="panel-heading"><div><p class="eyebrow" data-i18n="yourMoney">YOUR MONEY</p><h2 data-i18n="quickActions">Quick actions</h2></div></div>
+            <div class="quick-action-buttons"><button class="button button-primary" id="add-paycheck"><span aria-hidden="true">＋</span><span data-i18n="addPaycheck">Add paycheck</span></button><button class="button button-secondary" id="add-entry" disabled><span aria-hidden="true">＋</span><span data-i18n="addEntry">Add entry</span></button></div>
+            <section class="backup-tools" aria-label="Data backup">
+              <div class="backup-reminder" id="backup-reminder" hidden><span data-i18n="backupReminder">Protect your data with a backup. We recommend making one every 30 days.</span><button class="text-button" id="reminder-backup" type="button" data-i18n="backupExport">Download backup</button></div>
+              <div class="backup-actions"><button class="button button-secondary" id="export-backup" type="button" data-i18n="backupExport">Download backup</button><button class="button button-secondary" id="import-backup" type="button" data-i18n="backupRestore">Restore backup</button><input id="backup-file" type="file" accept="application/json,.json" hidden><span id="backup-status" role="status" aria-live="polite"></span></div>
+            </section>
+          </aside>
+          <article class="panel history-panel"><div class="panel-heading"><div><p class="eyebrow" data-i18n="yourFinances">YOUR FINANCES</p><h2 data-i18n="paycheckHistory">Paycheck history</h2></div></div><div id="paycheck-history-chart" class="paycheck-history-chart"></div></article>
         </section>
 
-        <section class="summary-grid" aria-label="Selected paycheck summary" data-i18n-aria-label="paycheck">
+        <section class="summary-section" aria-labelledby="summary-section-title">
+          <div class="dashboard-section-heading"><p class="eyebrow" data-i18n="overview">OVERVIEW</p><h2 id="summary-section-title" data-i18n="summaryTotals">Summary totals</h2></div>
+          <div class="summary-grid" aria-label="Selected paycheck summary" data-i18n-aria-label="paycheck">
           <article class="summary-card summary-card-dark">
             <div class="summary-top"><span data-i18n="paycheck">Paycheck</span><span class="summary-icon" aria-hidden="true">↗</span></div>
             <p class="summary-value" id="pay-total">—</p><p class="summary-fx" id="pay-usd"></p><p class="summary-note" id="pay-note" data-i18n="selectPaycheck">Select a paycheck to see your summary</p>
@@ -60,6 +68,7 @@
           <article class="summary-card"><div class="summary-top"><span data-i18n="expenses">Expenses</span><span class="summary-icon icon-soft-orange" aria-hidden="true">↘</span></div><p class="summary-value" id="expenses-total">—</p><p class="summary-fx" id="expenses-usd"></p><p class="summary-note" id="expenses-note" data-i18n="fromSelected">From your selected paycheck</p></article>
           <article class="summary-card"><div class="summary-top"><span data-i18n="saved">Saved</span><span class="summary-icon icon-soft-blue" aria-hidden="true">⌖</span></div><p class="summary-value" id="savings-total">—</p><p class="summary-fx" id="savings-usd"></p><p class="summary-note" id="savings-note" data-i18n="fromSelected">From your selected paycheck</p></article>
           <article class="summary-card"><div class="summary-top"><span data-i18n="remaining">Remaining</span><span class="summary-icon icon-soft-green" aria-hidden="true">◌</span></div><p class="summary-value" id="remaining-total">—</p><p class="summary-fx" id="remaining-usd"></p><p class="summary-note" id="remaining-note" data-i18n="fromSelected">From your selected paycheck</p></article>
+          </div>
         </section>
 
         <section class="content-grid">
@@ -68,7 +77,7 @@
             <div id="paycheck-list" class="paycheck-list"></div>
           </article>
           <article class="panel activity-panel">
-            <div class="panel-heading activity-panel-heading"><div><p class="eyebrow" data-i18n="detailsEyebrow">THE DETAILS</p><h2 id="activity-title" data-i18n="recentActivity">Recent activity</h2></div><div class="activity-heading-actions"><label for="activity-sort" data-i18n="sortEntries">Sort by</label><select id="activity-sort" disabled data-i18n-aria-label="sortEntries"><option value="date-desc" data-i18n="sortDateNewest">Date: newest first</option><option value="amount-desc" data-i18n="sortAmountHighest">Amount: highest first</option><option value="amount-asc" data-i18n="sortAmountLowest">Amount: lowest first</option><option value="category" data-i18n="sortCategory">Category: A to Z</option></select><button class="text-button" id="add-entry" disabled data-i18n="addEntry">＋ Add entry</button></div></div>
+            <div class="panel-heading activity-panel-heading"><div><p class="eyebrow" data-i18n="accountBreakdowns">ACCOUNT BREAKDOWNS</p><h2 id="activity-title" data-i18n="recentActivity">Recent activity</h2></div><div class="activity-heading-actions"><label for="activity-sort" data-i18n="sortEntries">Sort by</label><select id="activity-sort" disabled data-i18n-aria-label="sortEntries"><option value="date-desc" data-i18n="sortDateNewest">Date: newest first</option><option value="amount-desc" data-i18n="sortAmountHighest">Amount: highest first</option><option value="amount-asc" data-i18n="sortAmountLowest">Amount: lowest first</option><option value="category" data-i18n="sortCategory">Category: A to Z</option></select></div></div>
             <p id="category-drop-help" class="category-drop-help" data-i18n="categoryDropHelp">Hold the grip on an expense, then drop it on a category to move it.</p>
             <button id="manage-categories" class="text-button category-manage" type="button" data-i18n="manageCategories">＋ Manage categories</button>
             <div id="category-drop-zones" class="category-drop-zones" aria-hidden="true"></div>

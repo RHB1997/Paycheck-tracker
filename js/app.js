@@ -1,6 +1,7 @@
 import { inferCategory, CATEGORIES, resolveEntryCategory } from './categories.js';
 import { categoryOverridePatch, entryDescription } from './entries.js';
 import { sortEntries } from './entry-sort.js';
+import { renderPaycheckHistoryChart } from './paycheck-chart.js';
 import { createBackup, isBackupDue, parseBackup } from './backup.js';
 import { getUsdRateSnapshot, convertMinorToUsdMinor, convertRemainingToUsdMinor } from './exchange-rates.js';
 import { translate } from './i18n.js';
@@ -86,6 +87,15 @@ function sumUsd(records) {
   return records.reduce((total, record) => total + record.usdMinor, 0);
 }
 
+function renderPaycheckHistory(paychecks) {
+  $('#paycheck-history-chart').innerHTML = renderPaycheckHistoryChart(paychecks, {
+    money: (minor) => usdCash(minor),
+    date: (value) => formatDate(value, locale()),
+    emptyMessage: t('historyChartEmpty'),
+    chartLabel: (count) => t('historyChartLabel', { count }),
+  });
+}
+
 function setFormattedMoneyInput(input, fractionDigits) {
   const cursor = input.selectionStart ?? input.value.length;
   const prefix = input.value.slice(0, cursor).replace(/[٠-٩]/g, '0').replace(/[۰-۹]/g, '0');
@@ -105,6 +115,7 @@ function moneyPlaceholder(digits) { return digits === 0 ? '0' : `0.${'0'.repeat(
 
 function render() {
   const paychecks = store.listPaychecks();
+  renderPaycheckHistory(paychecks);
   if (!paychecks.some((item) => item.id === selectedId)) selectedId = paychecks[0]?.id ?? null;
   $('#paycheck-list').innerHTML = paychecks.length ? paychecks.map((item) => {
     const totals = summarize(item, item.entries);
